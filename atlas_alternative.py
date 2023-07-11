@@ -1,11 +1,9 @@
 from requests.auth import HTTPBasicAuth
-#from requests import status_codes
-#from requests import *
-from getpass import *
 from time import *
 from os import *
 from datetime import *
 from pytz import *
+from getpass import *
 import pandas as pd
 import requests
 import json
@@ -14,8 +12,8 @@ import csv
 ADDRESS = 'https://lorawan-ns-na.tektelic.com/api/'
 ADDRESS_SPLIT = ADDRESS.split("/")[2]
 print("\u001b[2J\u001b[0;0H")
-USERNAME = "lbarnowski@tektelic.com"#str(input("Username: "))
-PASSWORD = "L@7erp0inter"#str(getpass("Password: "))
+USERNAME = input("Username: ")
+PASSWORD = getpass("Password: ")
 jsonList = {
     'username': USERNAME,
     'password': PASSWORD
@@ -149,7 +147,7 @@ namesAndIds = zip(names, ids)
 namesAndIds_list = list(namesAndIds)
 namesAndIds_list = [list(t) for t in namesAndIds_list]
 print(namesAndIds_list)
-restult_id = serch_nested_list(namesAndIds_list, "Pelican test")
+restult_id = serch_nested_list(namesAndIds_list, "sensor-test")
 print(restult_id)
 # this just puts some of the json data into csv files
 CSV_make(device_specs, "KIWI-logs.csv")
