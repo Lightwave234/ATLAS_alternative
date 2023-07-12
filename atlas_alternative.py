@@ -109,6 +109,21 @@ def get_device_from_app_ID(applicationID, value):
 #app_data = get_device_from_app_ID('23ee7bc0-1aa2-11ee-8ee2-c19b4fa5a9aa', "data")
 #print(app_data)
 #get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914")
+class get_specs:
+    def __init__(self, applicationID):
+        self.applicationID = applicationID
+        output = get_device_from_app_ID(self.applicationID, "data")
+        return output
+    def newKKey(self):
+        output = get_device_from_app_ID(self.applicationID, "data")
+        return output["nwkSKey"]
+    def appKey(self):
+        output = get_device_from_app_ID(self.applicationID, "data")
+        return output["appKey"]
+    def cntmsb(self):
+        #output = get_device_from_app_ID(self.applicationID, "data")
+        #return output[""]
+        pass
 def disp(list):
     for item in list:
         print(item)
@@ -185,4 +200,4 @@ for device_id in device_id_list:
     rawPayload_list.append(rawPayload)
 print(rawPayload_list,f"\n{len(rawPayload_list)} total items.")
 #for item in rawPayload_list:
-#    run_extern_program("lora-packet-decode", )
+run_extern_program("lora-packet-decode","")
