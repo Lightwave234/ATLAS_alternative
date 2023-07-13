@@ -13,8 +13,8 @@ import subprocess
 ADDRESS = 'https://lorawan-ns-na.tektelic.com/api/'
 ADDRESS_SPLIT = ADDRESS.split("/")[2]
 print("\u001b[2J\u001b[0;0H")
-USERNAME = 'lbarnowski@tektelic.com'#input("Username: ")
-PASSWORD = 'L@7erp0inter'#getpass("Password: ")
+USERNAME = input("Username: ")
+PASSWORD = getpass("Password: ")
 jsonList = {
     'username': USERNAME,
     'password': PASSWORD
@@ -32,7 +32,7 @@ def login(): # this function will log into the NS
 token = login()
 print(token)
 #def get_sensor_info():
-headers = {
+headers = { # these are just 
     'Content-type' : 'application/json',
     'X-Authorization': f'Bearer {token}'
 }
@@ -106,23 +106,21 @@ def get_device_from_app_ID(applicationID, value):
             break
         except:
             print(f"<UPDATE> can't acess application, retrying...")
-#app_data = get_device_from_app_ID('23ee7bc0-1aa2-11ee-8ee2-c19b4fa5a9aa', "data")
-#print(app_data)
-#get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914")
+# this class should get the nwkSKey, appKey, and cntmsb
 class get_specs:
     def __init__(self, applicationID):
         self.applicationID = applicationID
-        output = get_device_from_app_ID(self.applicationID, "data")
-        return output
-    def newKKey(self):
-        output = get_device_from_app_ID(self.applicationID, "data")
-        return output["nwkSKey"]
-    def appKey(self):
-        output = get_device_from_app_ID(self.applicationID, "data")
-        return output["appKey"]
-    def cntmsb(self):
-        #output = get_device_from_app_ID(self.applicationID, "data")
-        #return output[""]
+        self.output = get_device_from_app_ID(self.applicationID, "data")
+    def allinfo(self):
+        if len(self.output) != 0:
+            return self.output
+    def NwkSKey(self):
+        if len(self.output) != 0:
+            return self.output[0]["nwkSKey"]
+    def AppSKey(self):
+        if len(self.output) != 0:
+            return self.output[0]["appSKey"]
+    def cntmsb(self): # I still need some clarification on what this means
         pass
 def disp(list):
     for item in list:
@@ -154,22 +152,34 @@ def serch_nested_list(nested_list, name):
             return sublist[1]
     return None
 # this function will make a CSV file, based on the json list provided    
-def CSV_make(list_to_use, filename = 'New.csv'):
+def CSV_make(list_to_use, filename = 'new.csv'):
+    """
+    This function will create a csv using a list or json, and store the data in a csv file
+    :param list_to_use: specify the list/json
+    :param filename: give the file a name (optional), if no name is specified, the output will default to a file named 'new.csv'
+    :retun: None
+    """
     if filename == None:
         filename = 'New.csv'
     df = pd.DataFrame(list_to_use)
     df.to_csv(filename, index = False)
     print(f"CSV file {filename} has been created")
 # this function will return the output from an external os command
-def run_extern_program(program, *args):
-    if args != None:
-        process = program + args
-    else:
-        process = program
-    result = subprocess.run(process, capture_output = True, text = True) # execute the program and capture its output
-    output_lines = result.stdout.splitlines()
-    return output_lines
+def run_extern_program(command):
+    """
+    This will execute an external command from shell, and retun the output
+    :param program: Specify the command or program from the shell to use, and their arguments
+    :return output_lines: this is the output string that the program or command will return after execution
+    """
+    result = subprocess.run(command, capture_output = True, text = True, shell = True)
+    ouput = result.stdout.strip().split('\n')
+    return ouput
 def header(text): # this is just a function that will create a boarder around a title or line of text
+    """
+    This function will create a line of text that is surrounded by a boarder that extends across the shell
+    :param text: this is where the text is located
+    :return: None
+    """
     ts = get_terminal_size()
     print(f"{'-' * ts.columns}\n{text}\n{'-' * ts.columns}")
 ### Main code ###
@@ -178,26 +188,44 @@ header("Tektelic NS Shell Interface")
 apps = get_active_applications()
 application_INFO = search_key(apps, "id")
 application_ID = search_key(application_INFO, "id")
-i = 0
-device_id_list = []
+device_id_list  = []
 rawPayload_list = []
+NwkSKeys        = []
+AppSKeys        = []
+i = 0
 for id in application_ID:
     device_data = get_device_from_app_ID(application_ID[i], "data")
     device_INFO = search_key(device_data, "id")
     device_ID = search_key(device_INFO, "id")
     print(device_ID)
     if len(device_ID) != 0:
-        device_id_list.extend(device_ID)
+        device_id_list.append(device_ID)
         #app_id_list.append(app_ID[0])
         #print(app_ID[0])
     i += 1
 print(device_id_list,f"\n{len(device_id_list)} total items.")
-for device_id in device_id_list:
-    device_specs = get_sensor_info(device_id)
-    #print(device_specs)
-    rawPayload = search_key(device_specs, "rawPayload")
-    print(rawPayload)
-    rawPayload_list.append(rawPayload)
+for item in device_id_list:
+    for device_id in item:
+        device_specs = get_sensor_info(device_id)
+        print(device_specs)
+        rawPayload = search_key(device_specs, "rawPayload")
+        #print(rawPayload)
+        rawPayload_list.append(rawPayload)
 print(rawPayload_list,f"\n{len(rawPayload_list)} total items.")
-#for item in rawPayload_list:
-run_extern_program("lora-packet-decode","")
+for item in application_ID:
+    if len(item) != 0:
+        appSpecs = get_specs(item)
+        NwkSKeys.append(appSpecs.NwkSKey())
+        AppSKeys.append(appSpecs.AppSKey())
+print("Secret NwkSKeys:\n",NwkSKeys,f"\n{len(NwkSKeys)} total items.\nSecret AppSKeys:\n",AppSKeys,f"\n{len(AppSKeys)} total items.")
+print(rawPayload_list[0])
+# test area #
+#print(rawPayload_list[0][0])
+#print(NwkSKeys[0])
+#print(AppSKeys[0])
+#ouput = run_extern_program("lora-packet-decode", f"--nwkkey {NwkSKeys[0]}", f" --appkey {AppSKeys[0]}", f" --base64 {rawPayload_list[0][0]}")
+#for main_item in rawPayload_list:
+#    for sub_item in main_item:
+#        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[j]} --appkey {AppSKeys[j]} --base64 {rawPayload_list[i][j]}")
+#output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[0]} --appkey {AppSKeys[0]} --base64 {rawPayload_list[0][0]}")
+#print(output[8])
