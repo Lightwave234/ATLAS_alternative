@@ -188,44 +188,64 @@ header("Tektelic NS Shell Interface")
 apps = get_active_applications()
 application_INFO = search_key(apps, "id")
 application_ID = search_key(application_INFO, "id")
-device_id_list  = []
-rawPayload_list = []
-NwkSKeys        = []
-AppSKeys        = []
+device_id_list      = []
+rawPayload_list     = []
+NwkSKeys            = []
+AppSKeys            = []
+FRMPayload_decript  = []
 i = 0
 for id in application_ID:
     device_data = get_device_from_app_ID(application_ID[i], "data")
     device_INFO = search_key(device_data, "id")
     device_ID = search_key(device_INFO, "id")
-    print(device_ID)
+    #print(device_ID)
     if len(device_ID) != 0:
         device_id_list.append(device_ID)
         #app_id_list.append(app_ID[0])
         #print(app_ID[0])
     i += 1
-print(device_id_list,f"\n{len(device_id_list)} total items.")
+#print(device_id_list,f"\n{len(device_id_list)} total items.")
 for item in device_id_list:
+    sublist = []
     for device_id in item:
         device_specs = get_sensor_info(device_id)
-        print(device_specs)
+        #print(device_specs)
         rawPayload = search_key(device_specs, "rawPayload")
         #print(rawPayload)
-        rawPayload_list.append(rawPayload)
-print(rawPayload_list,f"\n{len(rawPayload_list)} total items.")
+        sublist.append(rawPayload)
+    rawPayload_list.append(sublist)
+#        rawPayload_list.append(rawPayload)
+#print(rawPayload_list,f"\n{len(rawPayload_list)} total items.")
 for item in application_ID:
     if len(item) != 0:
+    #if not len(item):
         appSpecs = get_specs(item)
-        NwkSKeys.append(appSpecs.NwkSKey())
-        AppSKeys.append(appSpecs.AppSKey())
+        if not appSpecs.NwkSKey():
+            pass
+        else:
+            NwkSKeys.append(appSpecs.NwkSKey())
+        if not appSpecs.AppSKey():
+            pass
+        else:
+            AppSKeys.append(appSpecs.AppSKey())
 print("Secret NwkSKeys:\n",NwkSKeys,f"\n{len(NwkSKeys)} total items.\nSecret AppSKeys:\n",AppSKeys,f"\n{len(AppSKeys)} total items.")
-print(rawPayload_list[0])
-# test area #
 #print(rawPayload_list[0][0])
-#print(NwkSKeys[0])
-#print(AppSKeys[0])
-#ouput = run_extern_program("lora-packet-decode", f"--nwkkey {NwkSKeys[0]}", f" --appkey {AppSKeys[0]}", f" --base64 {rawPayload_list[0][0]}")
-#for main_item in rawPayload_list:
-#    for sub_item in main_item:
-#        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[j]} --appkey {AppSKeys[j]} --base64 {rawPayload_list[i][j]}")
-#output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[0]} --appkey {AppSKeys[0]} --base64 {rawPayload_list[0][0]}")
-#print(output[8])
+i = 0
+for sublist in rawPayload_list:
+    decode_items = []
+    for j, item in enumerate(sublist):
+        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[i]} --appkey {AppSKeys[i]} --base64 {item}")
+        decode_items.append(output)
+    i += 1
+    FRMPayload_decript.append(decode_items)
+print(FRMPayload_decript)
+#i = 0 # this should be the 9 items to find
+#j = 0
+#for list in rawPayload_list:
+#    print(list)
+#    for items in list:
+#        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[i]} --appkey {AppSKeys[i]} --base64 {rawPayload_list[i][j]}")
+#        FRMPayload_decript.append(output)
+#        #j += 1
+#    #i += 1  
+#print(FRMPayload_decript)
