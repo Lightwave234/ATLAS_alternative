@@ -9,6 +9,7 @@ import requests
 import json
 import csv
 import subprocess
+import re
 # set adress system
 ADDRESS = 'https://lorawan-ns-na.tektelic.com/api/'
 ADDRESS_SPLIT = ADDRESS.split("/")[2]
@@ -29,6 +30,7 @@ def login(): # this function will log into the NS
             break
         else:
             print(f"<UPDATE> server connection faliture.\nERROR: [{response_token.status_code}]\n", "Retrying")
+            exit()
 token = login()
 print(token)
 #def get_sensor_info():
@@ -66,13 +68,14 @@ def get_sensor_info(end_device_id):
     """
     while True:
         try:
+            timeout = 15
             # generate current epoch time
             TZ = 'MST' # this will use the current timezone
             current_epoch_time = int(datetime.now(timezone(TZ)).timestamp()) * 1000 # this system will generate a current epoch time
-            print("Curent epoch time:",current_epoch_time)
+            print("Curent epoch time:",current_epoch_time,"\nTimeout:",timeout)
             str = f"{ADDRESS}device/{end_device_id}/log?lastMillis={current_epoch_time}&limit=100&lastIndex=9223372036854775807"
             print(f"Connecting to: {str}...")
-            response_device = requests.get(f"{str}", headers = headers, timeout = 15)
+            response_device = requests.get(f"{str}", headers = headers, timeout = timeout)
             try:
                 print(f"<UPDATE> connection achived, data found at: {str}")
                 device_specs = response_device.json()
@@ -82,6 +85,7 @@ def get_sensor_info(end_device_id):
             break
         except:
             print("<UPDATE> can't acess device, retrying...")
+            timeout + 5
 #device_specs = get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914") # this contains the device's id, not to be confued with the aplication id
 #print(device_specs)
 # this function will get all the data from the aplication id, and return the deice id
@@ -181,7 +185,7 @@ def header(text): # this is just a function that will create a boarder around a 
     :return: None
     """
     ts = get_terminal_size()
-    print(f"{'-' * ts.columns}\n{text}\n{'-' * ts.columns}")
+    print(f"{'-' * ts.columns}\n{text.center(int(ts.columns))}\n{'-' * ts.columns}")
 ### Main code ###
 print("\u001b[2J\u001b[H")
 header("Tektelic NS Shell Interface")
@@ -193,6 +197,7 @@ rawPayload_list     = []
 NwkSKeys            = []
 AppSKeys            = []
 FRMPayload_decript  = []
+decrpited_info      = []
 i = 0
 for id in application_ID:
     device_data = get_device_from_app_ID(application_ID[i], "data")
@@ -238,14 +243,13 @@ for sublist in rawPayload_list:
         decode_items.append(output)
     i += 1
     FRMPayload_decript.append(decode_items)
-print(FRMPayload_decript)
-#i = 0 # this should be the 9 items to find
-#j = 0
-#for list in rawPayload_list:
-#    print(list)
-#    for items in list:
-#        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[i]} --appkey {AppSKeys[i]} --base64 {rawPayload_list[i][j]}")
-#        FRMPayload_decript.append(output)
-#        #j += 1
-#    #i += 1  
 #print(FRMPayload_decript)
+for sublist in FRMPayload_decript:
+    for item in sublist:
+        for subitem in item:
+            try:
+                #print(item[15])
+                modified_text = re.sub(r'^\W+', '', item[15])
+                print(modified_text)
+            except:
+                pass
