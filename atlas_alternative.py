@@ -29,7 +29,7 @@ def login(): # this function will log into the NS
             return token
             break
         else:
-            print(f"<UPDATE> server connection faliture.\nERROR: [{response_token.status_code}]\n", "Retrying")
+            print(f"<UPDATE> server connection faliture.\nERROR: [{response_token.status_code}]\n", "Retrying...")
             exit()
 token = login()
 print(token)
@@ -204,12 +204,11 @@ for id in application_ID:
     device_INFO = search_key(device_data, "id")
     device_ID = search_key(device_INFO, "id")
     #print(device_ID)
-    if len(device_ID) != 0:
+    if len(device_ID) != 0: # this is used to prevernt any balnk spaces from being added to the list
         device_id_list.append(device_ID)
         #app_id_list.append(app_ID[0])
         #print(app_ID[0])
     i += 1
-#print(device_id_list,f"\n{len(device_id_list)} total items.")
 for item in device_id_list:
     sublist = []
     for device_id in item:
@@ -219,8 +218,6 @@ for item in device_id_list:
         #print(rawPayload)
         sublist.append(rawPayload)
     rawPayload_list.append(sublist)
-#        rawPayload_list.append(rawPayload)
-#print(rawPayload_list,f"\n{len(rawPayload_list)} total items.")
 for item in application_ID:
     if len(item) != 0:
     #if not len(item):
@@ -234,7 +231,6 @@ for item in application_ID:
         else:
             AppSKeys.append(appSpecs.AppSKey())
 print("Secret NwkSKeys:\n",NwkSKeys,f"\n{len(NwkSKeys)} total items.\nSecret AppSKeys:\n",AppSKeys,f"\n{len(AppSKeys)} total items.")
-#print(rawPayload_list[0][0])
 i = 0
 for sublist in rawPayload_list:
     decode_items = []
@@ -248,8 +244,13 @@ for sublist in FRMPayload_decript:
     for item in sublist:
         for subitem in item:
             try:
-                #print(item[15])
-                modified_text = re.sub(r'^\W+', '', item[15])
-                print(modified_text)
+                modified_text = re.findall(r'[0-9-A-F]+', item[15])
+                if len(modified_text) == 0:
+                    pass
+                else:
+                    decrpited_info.append(modified_text[0])
             except:
                 pass
+for item in decrpited_info:
+    unique_hex = list(set(decrpited_info))
+print(unique_hex)
