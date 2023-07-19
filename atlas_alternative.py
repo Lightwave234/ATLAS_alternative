@@ -193,6 +193,7 @@ apps = get_active_applications()
 application_INFO = search_key(apps, "id")
 application_ID = search_key(application_INFO, "id")
 device_id_list      = []
+device_names        = []
 rawPayload_list     = []
 NwkSKeys            = []
 AppSKeys            = []
@@ -201,9 +202,12 @@ decrpited_info      = []
 i = 0
 for id in application_ID:
     device_data = get_device_from_app_ID(application_ID[i], "data")
+    ### get the device name ###
+    device_name = search_key(device_data, "name")
+    print(device_name)
+    ### end: get the device name ###
     device_INFO = search_key(device_data, "id")
     device_ID = search_key(device_INFO, "id")
-    #print(device_ID)
     if len(device_ID) != 0: # this is used to prevernt any balnk spaces from being added to the list
         device_id_list.append(device_ID)
         #app_id_list.append(app_ID[0])
@@ -239,7 +243,9 @@ for sublist in rawPayload_list:
         decode_items.append(output)
     i += 1
     FRMPayload_decript.append(decode_items)
-#print(FRMPayload_decript)
+###
+print("FRMPayload_decript has:",len(FRMPayload_decript),"items")
+###
 for sublist in FRMPayload_decript:
     for item in sublist:
         for subitem in item:
@@ -252,5 +258,21 @@ for sublist in FRMPayload_decript:
             except:
                 pass
 for item in decrpited_info:
-    unique_hex = list(set(decrpited_info))
-print(unique_hex)
+    hex_starting_with_0 = {s for s in decrpited_info if s.startswith('0')}
+    unique_hex = list(set(hex_starting_with_0))
+for item in unique_hex:
+    pairs = [item[i:i+2] for i in range(0, len(item), 2)]
+    converted_item = ' '.join([f"0X{pair}" for pair in pairs])
+    print(converted_item)
+### this is where I will pass one of the arguments into the application before executing it ###
+#line_number = 4
+#file = open('kiwi-clover-v2.0-decoder.js', 'r')
+file = open(r"C:\Users\lbarnowski\documents\src\new.txt", "r")
+print(file.read())
+file.close()
+#lines = file.readlines()
+#file.close()
+#if 0 <= line_number < len(lines):
+#    print(lines[line_number].strip())
+#else:
+#    print("line does not exit!")
