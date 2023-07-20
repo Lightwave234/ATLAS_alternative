@@ -10,6 +10,8 @@ import json
 import csv
 import subprocess
 import re
+import fileinput
+#import io
 # set adress system
 ADDRESS = 'https://lorawan-ns-na.tektelic.com/api/'
 ADDRESS_SPLIT = ADDRESS.split("/")[2]
@@ -72,7 +74,7 @@ def get_sensor_info(end_device_id):
             # generate current epoch time
             TZ = 'MST' # this will use the current timezone
             current_epoch_time = int(datetime.now(timezone(TZ)).timestamp()) * 1000 # this system will generate a current epoch time
-            print("Curent epoch time:",current_epoch_time,"\nTimeout:",timeout)
+            print("Curent epoch time:",current_epoch_time)
             str = f"{ADDRESS}device/{end_device_id}/log?lastMillis={current_epoch_time}&limit=100&lastIndex=9223372036854775807"
             print(f"Connecting to: {str}...")
             response_device = requests.get(f"{str}", headers = headers, timeout = timeout)
@@ -84,8 +86,8 @@ def get_sensor_info(end_device_id):
                 print(f"<UPDATE> device either not found or bad ID used.\nERROR: [{response_device.status_code}]")
             break
         except:
+            timeout += 5
             print("<UPDATE> can't acess device, retrying...")
-            timeout + 5
 #device_specs = get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914") # this contains the device's id, not to be confued with the aplication id
 #print(device_specs)
 # this function will get all the data from the aplication id, and return the deice id
@@ -189,90 +191,120 @@ def header(text): # this is just a function that will create a boarder around a 
 ### Main code ###
 print("\u001b[2J\u001b[H")
 header("Tektelic NS Shell Interface")
-apps = get_active_applications()
-application_INFO = search_key(apps, "id")
-application_ID = search_key(application_INFO, "id")
+apps = get_active_applications() # get all the avalable apps
+print(apps)
+application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
+application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
+data = {}
 device_id_list      = []
 device_names        = []
-rawPayload_list     = []
-NwkSKeys            = []
-AppSKeys            = []
-FRMPayload_decript  = []
-decrpited_info      = []
-i = 0
-for id in application_ID:
-    device_data = get_device_from_app_ID(application_ID[i], "data")
+#rawPayload_list     = []
+#NwkSKeys            = []
+#AppSKeys            = []
+#FRMPayload_decript  = []
+#decrpited_info      = []
+#hex                 = []
+for id in application_ID: # get the application IDs
+    device_data = get_device_from_app_ID(id, "data") # search under the data key
     ### get the device name ###
-    device_name = search_key(device_data, "name")
-    print(device_name)
+    device_name = search_key(device_data, "deviceModelName") # serch under the subkey 'deviceModelName' to get the device name
+    print(device_name,f"\nList length: {len(device_name)} items")
+    if len(device_name) != 0:
+        device_names.extend(device_name) # sore the device names in a list
     ### end: get the device name ###
-    device_INFO = search_key(device_data, "id")
-    device_ID = search_key(device_INFO, "id")
+    device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
+    device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
+    print(device_ID,f"\nList length: {len(device_ID)} items")
     if len(device_ID) != 0: # this is used to prevernt any balnk spaces from being added to the list
-        device_id_list.append(device_ID)
-        #app_id_list.append(app_ID[0])
-        #print(app_ID[0])
-    i += 1
-for item in device_id_list:
-    sublist = []
-    for device_id in item:
-        device_specs = get_sensor_info(device_id)
-        #print(device_specs)
-        rawPayload = search_key(device_specs, "rawPayload")
-        #print(rawPayload)
-        sublist.append(rawPayload)
-    rawPayload_list.append(sublist)
-for item in application_ID:
-    if len(item) != 0:
-    #if not len(item):
-        appSpecs = get_specs(item)
-        if not appSpecs.NwkSKey():
-            pass
-        else:
-            NwkSKeys.append(appSpecs.NwkSKey())
-        if not appSpecs.AppSKey():
-            pass
-        else:
-            AppSKeys.append(appSpecs.AppSKey())
-print("Secret NwkSKeys:\n",NwkSKeys,f"\n{len(NwkSKeys)} total items.\nSecret AppSKeys:\n",AppSKeys,f"\n{len(AppSKeys)} total items.")
-i = 0
-for sublist in rawPayload_list:
-    decode_items = []
-    for j, item in enumerate(sublist):
-        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[i]} --appkey {AppSKeys[i]} --base64 {item}")
-        decode_items.append(output)
-    i += 1
-    FRMPayload_decript.append(decode_items)
-###
-print("FRMPayload_decript has:",len(FRMPayload_decript),"items")
-###
-for sublist in FRMPayload_decript:
-    for item in sublist:
-        for subitem in item:
-            try:
-                modified_text = re.findall(r'[0-9-A-F]+', item[15])
-                if len(modified_text) == 0:
-                    pass
-                else:
-                    decrpited_info.append(modified_text[0])
-            except:
-                pass
-for item in decrpited_info:
-    hex_starting_with_0 = {s for s in decrpited_info if s.startswith('0')}
-    unique_hex = list(set(hex_starting_with_0))
-for item in unique_hex:
-    pairs = [item[i:i+2] for i in range(0, len(item), 2)]
-    converted_item = ' '.join([f"0X{pair}" for pair in pairs])
-    print(converted_item)
-### this is where I will pass one of the arguments into the application before executing it ###
-#line_number = 4
-#file = open('kiwi-clover-v2.0-decoder.js', 'r')
-file = open(r"C:\Users\lbarnowski\documents\src\new.txt", "r")
-print(file.read())
-file.close()
-#lines = file.readlines()
-#file.close()
-#if 0 <= line_number < len(lines):
-#    print(lines[line_number].strip())
-#else:
-#    print("line does not exit!")
+        device_id_list.extend(device_ID) # Note: remember this
+#print(device_names,f"List length: {len(device_names)} items")
+#print(device_id_list,f"List length: {len(device_id_list)} items")
+for key, value in zip(device_names, device_id_list):
+    # If the key already exists in the dictionary, append the value to the existing list
+    if key in data:
+        data[key].append(value)
+    else: # otherwise create a new list with the value of the first element
+        data[key] = [value]
+print(data)
+for items in data.values():
+    for item in items:
+        print(item)
+#print(data)
+
+
+
+### refrence, do not delete ###
+#for item in device_id_list: 
+#    sublist = []
+#    for device_id in item:
+#        device_specs = get_sensor_info(device_id) # this is where the devices are logged into
+#        #print(device_specs)
+#        rawPayload = search_key(device_specs, "rawPayload") # this is where to get the payloads
+#        #print(rawPayload)
+#        sublist.append(rawPayload) # store all the raw payloads into a sub-list to later be used with the NwkSKeys and AppSKeys
+#    rawPayload_list.append(sublist) # put the sblist into a larger list
+#for item in application_ID: # for every item in the application_ID list, identify, but do not use blanks
+#    if len(item) != 0:
+#    #if not len(item):
+#        appSpecs = get_specs(item) # assign the id to an object, and then pull out specific info
+#        if not appSpecs.NwkSKey():
+#            pass
+#        else:
+#            NwkSKeys.append(appSpecs.NwkSKey())
+#        if not appSpecs.AppSKey():
+#            pass
+#        else:
+#            AppSKeys.append(appSpecs.AppSKey())
+#print("Secret NwkSKeys:\n",NwkSKeys,f"\n{len(NwkSKeys)} total items.\nSecret AppSKeys:\n",AppSKeys,f"\n{len(AppSKeys)} total items.")
+#i = 0
+#for sublist in rawPayload_list:
+#    decode_items = []
+#    for j, item in enumerate(sublist):
+#        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[i]} --appkey {AppSKeys[i]} --base64 {item}")
+#        decode_items.append(output)
+#    i += 1
+#    FRMPayload_decript.append(decode_items)
+####
+#print("FRMPayload_decript has:",len(FRMPayload_decript),"items")
+####
+#for sublist in FRMPayload_decript:
+#    for item in sublist:
+#        for subitem in item:
+#            try:
+#                modified_text = re.findall(r'[0-9-A-F]+', item[15])
+#                if len(modified_text) == 0:
+#                    pass
+#                else:
+#                    decrpited_info.append(modified_text[0])
+#            except:
+#                pass
+#for item in decrpited_info:
+#    hex_starting_with_0 = {s for s in decrpited_info if s.startswith('0')}
+#    unique_hex = list(set(hex_starting_with_0))
+#for item in unique_hex:
+#    pairs = [item[i:i+2] for i in range(0, len(item), 2)]
+#    converted_item = ', '.join([f"0X{pair}" for pair in pairs])
+#    hex.append(converted_item)
+#print(hex)
+#print(device_names)
+#for item in hex:
+#    print(item)
+#for item in device_names:
+#    print(item)
+##for item in hex:
+##    print(item)
+#### this is where I will pass one of the arguments into the application before executing it ###
+##file = open(r"C:\Users\lbarnowski\documents\src\new.txt", "r")
+#fileName = "kiwi-clover-v2.0-decoder.js"
+#line_number_to_mod = 4
+#new_line_content = "    var bytes = convertToUint8Array([]);"
+#try:
+#    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
+#        if line_number == line_number_to_mod:
+#            print(new_line_content)
+#        else:
+#            print(line, end = "")
+#except FileNotFoundError:
+#    print("file not found")
+#except Exception as e:
+#    print("Error occured while modifying the file")
