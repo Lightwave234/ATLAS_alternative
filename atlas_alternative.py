@@ -70,14 +70,14 @@ def get_sensor_info(end_device_id):
     """
     while True:
         try:
-            timeout = 15
+            #timeout = 15
             # generate current epoch time
             TZ = 'MST' # this will use the current timezone
             current_epoch_time = int(datetime.now(timezone(TZ)).timestamp()) * 1000 # this system will generate a current epoch time
             print("Curent epoch time:",current_epoch_time)
             str = f"{ADDRESS}device/{end_device_id}/log?lastMillis={current_epoch_time}&limit=100&lastIndex=9223372036854775807"
             print(f"Connecting to: {str}...")
-            response_device = requests.get(f"{str}", headers = headers, timeout = timeout)
+            response_device = requests.get(f"{str}", headers = headers, timeout = 20)
             try:
                 print(f"<UPDATE> connection achived, data found at: {str}")
                 device_specs = response_device.json()
@@ -86,7 +86,7 @@ def get_sensor_info(end_device_id):
                 print(f"<UPDATE> device either not found or bad ID used.\nERROR: [{response_device.status_code}]")
             break
         except:
-            timeout += 5
+            #timeout += 5
             print("<UPDATE> can't acess device, retrying...")
 #device_specs = get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914") # this contains the device's id, not to be confued with the aplication id
 #print(device_specs)
@@ -196,8 +196,8 @@ print(apps)
 application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
 application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
 data = {}
-device_id_list      = []
-device_names        = []
+device_id_list = []
+device_names   = []
 #rawPayload_list     = []
 #NwkSKeys            = []
 #AppSKeys            = []
@@ -205,6 +205,7 @@ device_names        = []
 #decrpited_info      = []
 #hex                 = []
 for id in application_ID: # get the application IDs
+    subItem = []
     device_data = get_device_from_app_ID(id, "data") # search under the data key
     ### get the device name ###
     device_name = search_key(device_data, "deviceModelName") # serch under the subkey 'deviceModelName' to get the device name
@@ -212,13 +213,29 @@ for id in application_ID: # get the application IDs
     if len(device_name) != 0:
         device_names.extend(device_name) # sore the device names in a list
     ### end: get the device name ###
+    ### get the appSKey of the application ###
+    AppSKey = search_key(device_data, "appSKey")
+    if len(AppSKey) != 0:
+        #print(AppSKey)
+        subItem.append(AppSKey)
+    ### end: get the appSKey of the application ###
+    ### get the nwkSKey of the application ###
+    NwkSKey = search_key(device_data, "nwkSKey")
+    if len(NwkSKey) != 0:
+        #print(NwkSKey)
+        subItem.append(NwkSKey)
+    ### end: get the nwkSKey of the application ###
     device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
     device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
     print(device_ID,f"\nList length: {len(device_ID)} items")
     if len(device_ID) != 0: # this is used to prevernt any balnk spaces from being added to the list
-        device_id_list.extend(device_ID) # Note: remember this
+        subItem.append(device_ID) # Note: remember this
+    if len(subItem) != 0:
+        device_id_list.append(subItem)
+    subItem.reverse()
 #print(device_names,f"List length: {len(device_names)} items")
 #print(device_id_list,f"List length: {len(device_id_list)} items")
+#print(device_id_list)
 for key, value in zip(device_names, device_id_list):
     # If the key already exists in the dictionary, append the value to the existing list
     if key in data:
@@ -226,9 +243,47 @@ for key, value in zip(device_names, device_id_list):
     else: # otherwise create a new list with the value of the first element
         data[key] = [value]
 print(data)
-for items in data.values():
-    for item in items:
-        print(item)
+#print(data['Industrial Sensor'][0])
+#print(data['Industrial Sensor'][1][2])
+#print(data['Industrial Sensor'][2])
+for key, value in data.items():
+    for outer_index, outer_subList in enumerate(value):
+        #print(outer_subList[0])
+        for middle_index, middle_subList in enumerate(outer_subList):
+            #print(middle_subList[0])
+            for inner_index, item in enumerate(middle_subList):
+                pass
+                #print(item)
+                #print(item)
+#                device_specs = get_sensor_info(item)
+#                print(device_specs)
+            #rawPayload = search_key(device_specs, "rawPayload")
+            #data[key][outer_index][inner_index][item_index] = rawPayload
+#print(data['KIWI'][0][0][0])
+            #if len(rawPayload) != 0:
+
+#print(data['KIWI'],f"\nitems in the KIWI: {len(data['KIWI'][0])}")
+
+#print(data['KIWI'][0][0][0])
+#device_specs = get_sensor_info(data['KIWI'][0][0][0])
+#rawPayload = search_key(device_specs, "rawPayload")
+##print(rawPayload)
+#data['KIWI'][0][0][0] = rawPayload
+#print(data['KIWI'])
+
+#for key, val in data.items():
+#    subList = []
+#    for item in val:
+#        #print(key, item)
+#        device_specs = get_sensor_info(item)
+#        rawPayload = search_key(device_specs, "rawPayload")
+#        #print(rawPayload)
+#        if len(rawPayload) != 0:
+#            subList.append(rawPayload)
+#    data[key] = subList
+##for items in data.values():
+##    for item in items:
+##        print(item)
 #print(data)
 
 
