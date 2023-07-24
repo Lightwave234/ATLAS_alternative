@@ -192,10 +192,11 @@ def header(text): # this is just a function that will create a boarder around a 
 print("\u001b[2J\u001b[H")
 header("Tektelic NS Shell Interface")
 apps = get_active_applications() # get all the avalable apps
-print(apps)
+#print(apps)
 application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
 application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
 data = {}
+fixed_data = {}
 device_id_list = []
 device_names   = []
 #rawPayload_list     = []
@@ -216,20 +217,21 @@ for id in application_ID: # get the application IDs
     ### get the appSKey of the application ###
     AppSKey = search_key(device_data, "appSKey")
     if len(AppSKey) != 0:
-        #print(AppSKey)
         subItem.append(AppSKey)
+        #subItem.extend(AppSKey)
     ### end: get the appSKey of the application ###
     ### get the nwkSKey of the application ###
     NwkSKey = search_key(device_data, "nwkSKey")
     if len(NwkSKey) != 0:
-        #print(NwkSKey)
         subItem.append(NwkSKey)
+        #subItem.extend(NwkSKey)
     ### end: get the nwkSKey of the application ###
     device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
     device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
     print(device_ID,f"\nList length: {len(device_ID)} items")
     if len(device_ID) != 0: # this is used to prevernt any balnk spaces from being added to the list
         subItem.append(device_ID) # Note: remember this
+        #subItem.extend(device_ID)
     if len(subItem) != 0:
         device_id_list.append(subItem)
     subItem.reverse()
@@ -242,51 +244,42 @@ for key, value in zip(device_names, device_id_list):
         data[key].append(value)
     else: # otherwise create a new list with the value of the first element
         data[key] = [value]
-print(data)
-#print(data['Industrial Sensor'][0])
-#print(data['Industrial Sensor'][1][2])
-#print(data['Industrial Sensor'][2])
+#print(data['Industrial Sensor'][0][0][0])
+#print(data)
+#print(fixed_data)
 for key, value in data.items():
     for outer_index, outer_subList in enumerate(value):
         #print(outer_subList[0])
-        for middle_index, middle_subList in enumerate(outer_subList):
-            #print(middle_subList[0])
-            for inner_index, item in enumerate(middle_subList):
-                pass
-                #print(item)
-                #print(item)
-#                device_specs = get_sensor_info(item)
-#                print(device_specs)
-            #rawPayload = search_key(device_specs, "rawPayload")
-            #data[key][outer_index][inner_index][item_index] = rawPayload
-#print(data['KIWI'][0][0][0])
-            #if len(rawPayload) != 0:
-
-#print(data['KIWI'],f"\nitems in the KIWI: {len(data['KIWI'][0])}")
-
-#print(data['KIWI'][0][0][0])
-#device_specs = get_sensor_info(data['KIWI'][0][0][0])
-#rawPayload = search_key(device_specs, "rawPayload")
-##print(rawPayload)
-#data['KIWI'][0][0][0] = rawPayload
-#print(data['KIWI'])
-
-#for key, val in data.items():
-#    subList = []
-#    for item in val:
-#        #print(key, item)
-#        device_specs = get_sensor_info(item)
-#        rawPayload = search_key(device_specs, "rawPayload")
-#        #print(rawPayload)
-#        if len(rawPayload) != 0:
-#            subList.append(rawPayload)
-#    data[key] = subList
-##for items in data.values():
-##    for item in items:
-##        print(item)
-#print(data)
-
-
+        for index, item in enumerate(outer_subList[0]):
+            print(f"Key: {key}, Outer Index: {outer_index}, Inner Index: {index}, Item: {item}")
+            deviceSpecs = get_sensor_info(item)
+            try:
+                data[key][outer_index][index] = search_key(deviceSpecs, 'rawPayload')
+                #payload = search_key(deviceSpecs, 'rawPayload')
+                #ata.update({key[outer_index][index]: payload})
+            except:
+                print("item did not overwrite!")
+#print(data['Industrial Sensor'])
+#for key, value in data.items():
+#    print(key + ":",value,f"\nThere are {len(value)} items")
+#    for item in value[0]:
+#        print(item)
+for key, value in data.items():
+    for outer_index, outer_subList in enumerate(value):
+        for index, item in enumerate(outer_subList[0]):
+            print(key,':',item,'index :',index)
+            payload = item
+        for index, item in enumerate(outer_subList[2]):
+            print(key,':',item,'index :',index)
+            net_key = item
+        for index, item in enumerate(outer_subList[1]):
+            print(key,':',item,'index :',index)
+            app_key = item
+            output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {payload}")
+            print(output)
+            #for item in items:
+            #    print(item)
+#print(rawPyload)
 
 ### refrence, do not delete ###
 #for item in device_id_list: 
