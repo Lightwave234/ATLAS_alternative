@@ -113,21 +113,21 @@ def get_device_from_app_ID(applicationID, value):
         except:
             print(f"<UPDATE> can't acess application, retrying...")
 # this class should get the nwkSKey, appKey, and cntmsb
-class get_specs:
-    def __init__(self, applicationID):
-        self.applicationID = applicationID
-        self.output = get_device_from_app_ID(self.applicationID, "data")
-    def allinfo(self):
-        if len(self.output) != 0:
-            return self.output
-    def NwkSKey(self):
-        if len(self.output) != 0:
-            return self.output[0]["nwkSKey"]
-    def AppSKey(self):
-        if len(self.output) != 0:
-            return self.output[0]["appSKey"]
-    def cntmsb(self): # I still need some clarification on what this means
-        pass
+#class get_specs:
+#    def __init__(self, applicationID):
+#        self.applicationID = applicationID
+#        self.output = get_device_from_app_ID(self.applicationID, "data")
+#    def allinfo(self):
+#        if len(self.output) != 0:
+#            return self.output
+#    def NwkSKey(self):
+#        if len(self.output) != 0:
+#            return self.output[0]["nwkSKey"]
+#    def AppSKey(self):
+#        if len(self.output) != 0:
+#            return self.output[0]["appSKey"]
+#    def cntmsb(self): # I still need some clarification on what this means
+#        pass
 def disp(list):
     for item in list:
         print(item)
@@ -180,7 +180,12 @@ def run_extern_program(command):
     result = subprocess.run(command, capture_output = True, text = True, shell = True)
     ouput = result.stdout.strip().split('\n')
     return ouput
-def header(text): # this is just a function that will create a boarder around a title or line of text
+# this function should get the name of an aplication
+#def app_names():
+#    apps = get_active_applications()
+#    print(apps)
+# this is just a function that will create a boarder around a title or line of text
+def header(text):
     """
     This function will create a line of text that is surrounded by a boarder that extends across the shell
     :param text: this is where the text is located
@@ -188,98 +193,110 @@ def header(text): # this is just a function that will create a boarder around a 
     """
     ts = get_terminal_size()
     print(f"{'-' * ts.columns}\n{text.center(int(ts.columns))}\n{'-' * ts.columns}")
+def generate_unique_key(key, counter):
+    if counter == 0:
+        return 0
+    else:
+        return f"{key}({counter})"
 ### Main code ###
 print("\u001b[2J\u001b[H")
 header("Tektelic NS Shell Interface")
 apps = get_active_applications() # get all the avalable apps
-#print(apps)
+print(apps)
 application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
 application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
 data = {}
-fixed_data = {}
+counter = {}
 device_id_list = []
 device_names   = []
-#rawPayload_list     = []
-#NwkSKeys            = []
-#AppSKeys            = []
-#FRMPayload_decript  = []
-#decrpited_info      = []
-#hex                 = []
-for id in application_ID: # get the application IDs
-    subItem = []
+#names = set(device_names)
+for id in application_ID: # get the application ID
+#for index, id in enumerate(application_ID):
+    subItem = {}
     device_data = get_device_from_app_ID(id, "data") # search under the data key
+    #print(device_data)
+    name = search_key(device_data, "name")
+    print(name)
     ### get the device name ###
     device_name = search_key(device_data, "deviceModelName") # serch under the subkey 'deviceModelName' to get the device name
-    print(device_name,f"\nList length: {len(device_name)} items")
-    if len(device_name) != 0:
+    #print(device_name,f"\nList length: {len(device_name)} items")
+    #if len(device_name) != 0:
+    if device_name in device_names:
+        pass
+    else:
         device_names.extend(device_name) # sore the device names in a list
     ### end: get the device name ###
     ### get the appSKey of the application ###
     AppSKey = search_key(device_data, "appSKey")
-    if len(AppSKey) != 0:
-        subItem.append(AppSKey)
-        #subItem.extend(AppSKey)
+    for index, value in enumerate(AppSKey):
+        subItem['AppSKey'] = AppSKey
+        key = AppSKey[index]
+        subItem['AppSKey'] = key
     ### end: get the appSKey of the application ###
     ### get the nwkSKey of the application ###
     NwkSKey = search_key(device_data, "nwkSKey")
-    if len(NwkSKey) != 0:
-        subItem.append(NwkSKey)
-        #subItem.extend(NwkSKey)
+    #subItem['NwkSKey'] = NwkSKey
+    for index, value in enumerate(NwkSKey):
+        key = NwkSKey[index]
+        subItem['NwkSKey'] = key
     ### end: get the nwkSKey of the application ###
     device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
     device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
-    print(device_ID,f"\nList length: {len(device_ID)} items")
-    if len(device_ID) != 0: # this is used to prevernt any balnk spaces from being added to the list
-        subItem.append(device_ID) # Note: remember this
-        #subItem.extend(device_ID)
-    if len(subItem) != 0:
-        device_id_list.append(subItem)
-    subItem.reverse()
-#print(device_names,f"List length: {len(device_names)} items")
-#print(device_id_list,f"List length: {len(device_id_list)} items")
+    #subItem['device_ID'] = device_ID
+    for index, value in enumerate(device_ID):
+        key = device_ID[index]
+        subItem['device_ID'] = key
+    print(device_ID,'\n',len(device_ID))
+    print(device_name,'\n',len(device_name))
+    print(AppSKey,'\n',len(AppSKey))
+    print(NwkSKey,'\n',len(NwkSKey))
+    #print(len(subItem))
+    #print(subItem)
+    #device_id_list.append(subItem)
+    #print('device_names:',len(device_names))
+    #print('device_id_list:',len(device_id_list))
+    device_id_list.append(subItem)
+    for key, value in zip(name, subItem):
+        if key in data:
+            data[key].append(value)
+        else:
+            data[key] = [value]
+print(data)
+#print(len(device_id_list))
 #print(device_id_list)
-for key, value in zip(device_names, device_id_list):
-    # If the key already exists in the dictionary, append the value to the existing list
-    if key in data:
-        data[key].append(value)
-    else: # otherwise create a new list with the value of the first element
-        data[key] = [value]
-#print(data['Industrial Sensor'][0][0][0])
+#print(len(device_names))
+#print(device_names)
+### ###
+#for key, value in zip(name, subItem):
+#    if key in data:
+#        data[key].append(value)
+#    else:
+#        data[key] = [value]
 #print(data)
-#print(fixed_data)
-for key, value in data.items():
-    for outer_index, outer_subList in enumerate(value):
-        #print(outer_subList[0])
-        for index, item in enumerate(outer_subList[0]):
-            print(f"Key: {key}, Outer Index: {outer_index}, Inner Index: {index}, Item: {item}")
-            deviceSpecs = get_sensor_info(item)
-            try:
-                data[key][outer_index][index] = search_key(deviceSpecs, 'rawPayload')
-                #payload = search_key(deviceSpecs, 'rawPayload')
-                #ata.update({key[outer_index][index]: payload})
-            except:
-                print("item did not overwrite!")
-#print(data['Industrial Sensor'])
-#for key, value in data.items():
-#    print(key + ":",value,f"\nThere are {len(value)} items")
-#    for item in value[0]:
-#        print(item)
-for key, value in data.items():
-    for outer_index, outer_subList in enumerate(value):
-        for index, item in enumerate(outer_subList[0]):
-            print(key,':',item,'index :',index)
-            payload = item
-        for index, item in enumerate(outer_subList[2]):
-            print(key,':',item,'index :',index)
-            net_key = item
-        for index, item in enumerate(outer_subList[1]):
-            print(key,':',item,'index :',index)
-            app_key = item
-            output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {payload}")
-            print(output)
-            #for item in items:
-            #    print(item)
-#print(rawPyload)
+#for key, value in zip(device_names, device_id_list):
+#    if key in data:
+#        if key not in counter:
+#            counter[key] = 1
+#            new_key = generate_unique_key(key, counter[key])
+#        else:
+#            counter[key] += 1
+#            new_key = generate_unique_key(key, counter[key])
+#    else:
+#        new_key = key
+#    data[new_key] = value
+#print(data)
+#app_names()
+    #subItem.reverse()
+    #print(device_names,'\n',device_id_list)
+#for key, value in zip(device_names, device_id_list):
+#    # If the key already exists in the dictionary, append the value to the existing list
+#    if key in data:
+#        data[key].append(value)
+#    else: # otherwise create a new list with the value of the first element
+#        data[key] = [value]
+#    if key in data:
+#        if key not in 
+#print(data)
 
 ### refrence, do not delete ###
 #for item in device_id_list: 
