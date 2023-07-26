@@ -20,8 +20,8 @@ passwd= getpass.getpass("Enter password: ")
 application_name_list= input("Enter the Application name: ")
 '''
 # get the user personal information in order to authenticate acess to the site
-USER_NAME = "lbarnowski@tektelic.com"   # user account or email (hardcoded for developers)
-USER_PASSWORD = "L@7erp0inter"          # user password (hardcoded for developers)
+USER_NAME = input() # user account or email (hardcoded for developers)
+USER_PASSWORD = input() # user password (hardcoded for developers)
 
 
 def login_to_server(): # test to see if a connection to the server has been successfully established

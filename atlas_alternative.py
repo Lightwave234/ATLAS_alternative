@@ -202,102 +202,72 @@ def generate_unique_key(key, counter):
 print("\u001b[2J\u001b[H")
 header("Tektelic NS Shell Interface")
 apps = get_active_applications() # get all the avalable apps
-print(apps)
 application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
+application_NAME = search_key(apps, "name")
 application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
 data = {}
 counter = {}
-device_id_list = []
-device_names   = []
-#names = set(device_names)
+appData = []
 for id in application_ID: # get the application ID
-#for index, id in enumerate(application_ID):
+    subName = {}
     subItem = {}
     device_data = get_device_from_app_ID(id, "data") # search under the data key
-    #print(device_data)
-    name = search_key(device_data, "name")
-    print(name)
-    ### get the device name ###
-    device_name = search_key(device_data, "deviceModelName") # serch under the subkey 'deviceModelName' to get the device name
-    #print(device_name,f"\nList length: {len(device_name)} items")
-    #if len(device_name) != 0:
-    if device_name in device_names:
-        pass
-    else:
-        device_names.extend(device_name) # sore the device names in a list
-    ### end: get the device name ###
+    ### get the device names ###
+    device_name = search_key(device_data, "deviceModelName")
+    for index, value in enumerate(device_name):
+        key = device_name[index]
+        subItem["Device Type"] = key
+    ### end: get the device names ###
     ### get the appSKey of the application ###
     AppSKey = search_key(device_data, "appSKey")
     for index, value in enumerate(AppSKey):
-        subItem['AppSKey'] = AppSKey
         key = AppSKey[index]
-        subItem['AppSKey'] = key
+        subItem["AppSKey"] = key
     ### end: get the appSKey of the application ###
     ### get the nwkSKey of the application ###
     NwkSKey = search_key(device_data, "nwkSKey")
-    #subItem['NwkSKey'] = NwkSKey
     for index, value in enumerate(NwkSKey):
         key = NwkSKey[index]
-        subItem['NwkSKey'] = key
+        subItem["NwkSKey"] = key
     ### end: get the nwkSKey of the application ###
     device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
     device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
-    #subItem['device_ID'] = device_ID
     for index, value in enumerate(device_ID):
         key = device_ID[index]
-        subItem['device_ID'] = key
-    print(device_ID,'\n',len(device_ID))
-    print(device_name,'\n',len(device_name))
-    print(AppSKey,'\n',len(AppSKey))
-    print(NwkSKey,'\n',len(NwkSKey))
-    #print(len(subItem))
-    #print(subItem)
-    #device_id_list.append(subItem)
-    #print('device_names:',len(device_names))
-    #print('device_id_list:',len(device_id_list))
-    device_id_list.append(subItem)
-    for key, value in zip(name, subItem):
-        if key in data:
-            data[key].append(value)
-        else:
-            data[key] = [value]
-print(data)
-#print(len(device_id_list))
-#print(device_id_list)
-#print(len(device_names))
-#print(device_names)
-### ###
-#for key, value in zip(name, subItem):
-#    if key in data:
-#        data[key].append(value)
-#    else:
-#        data[key] = [value]
-#print(data)
-#for key, value in zip(device_names, device_id_list):
-#    if key in data:
-#        if key not in counter:
-#            counter[key] = 1
-#            new_key = generate_unique_key(key, counter[key])
-#        else:
-#            counter[key] += 1
-#            new_key = generate_unique_key(key, counter[key])
-#    else:
-#        new_key = key
-#    data[new_key] = value
-#print(data)
-#app_names()
-    #subItem.reverse()
-    #print(device_names,'\n',device_id_list)
-#for key, value in zip(device_names, device_id_list):
-#    # If the key already exists in the dictionary, append the value to the existing list
-#    if key in data:
-#        data[key].append(value)
-#    else: # otherwise create a new list with the value of the first element
-#        data[key] = [value]
-#    if key in data:
-#        if key not in 
-#print(data)
-
+        subItem["Device ID"] = key
+    print(subItem)
+    appData.append(subItem)
+for key, value in zip(application_NAME, appData):
+    if key in data:
+        data[key].append(value)
+    else:
+        data[key] = [value]
+for key, value in data.items():
+    for sub_key, sub_value in enumerate(value):
+        app_id = sub_value.get("Device ID")
+        if app_id != None:
+            #print(sub_value)
+            device_specs = get_sensor_info(app_id)
+            rawPayload = search_key(device_specs, "rawPayload")
+            #print(rawPayload)
+            del sub_value["Device ID"]
+            sub_value["Raw Payloads"] = rawPayload
+            print(sub_value)
+        app_key = sub_value.get("AppSKey")
+        net_key = sub_value.get("NwkSKey")
+        payload = sub_value.get("Raw Payloads")
+        try:
+            for item in payload:
+                try:
+                    output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
+                    try:
+                        print(output[15])
+                    except:
+                        pass
+                except:
+                    pass
+        except:
+            pass
 ### refrence, do not delete ###
 #for item in device_id_list: 
 #    sublist = []
