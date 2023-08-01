@@ -180,11 +180,6 @@ def run_extern_program(command):
     result = subprocess.run(command, capture_output = True, text = True, shell = True)
     ouput = result.stdout.strip().split('\n')
     return ouput
-# this function should get the name of an aplication
-#def app_names():
-#    apps = get_active_applications()
-#    print(apps)
-# this is just a function that will create a boarder around a title or line of text
 def header(text):
     """
     This function will create a line of text that is surrounded by a boarder that extends across the shell
@@ -198,6 +193,8 @@ def generate_unique_key(key, counter):
         return 0
     else:
         return f"{key}({counter})"
+def create_dict(keys):
+    return {key: '' for key in keys}
 ### Main code ###
 print("\u001b[2J\u001b[H")
 header("Tektelic NS Shell Interface")
@@ -205,43 +202,55 @@ apps = get_active_applications() # get all the avalable apps
 application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
 application_NAME = search_key(apps, "name")
 application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
-data = {}
-counter = {}
-appData = []
-for id in application_ID: # get the application ID
-    subName = {}
+data      = {}
+appData   = []
+dev_names = []
+for name in application_NAME:
+    dev_names.append(name)
+for id in application_ID: # get the application ID 
     subItem = {}
+    #sub_data    = {}
+    devices = []
+    apps    = []
+    nets    = []
+    dev_ids = []
     device_data = get_device_from_app_ID(id, "data") # search under the data key
     ### get the device names ###
     device_name = search_key(device_data, "deviceModelName")
     for index, value in enumerate(device_name):
-        key = device_name[index]
-        subItem["Device Type"] = key
+        devices.append(value)
     ### end: get the device names ###
     ### get the appSKey of the application ###
     AppSKey = search_key(device_data, "appSKey")
     for index, value in enumerate(AppSKey):
-        key = AppSKey[index]
-        subItem["AppSKey"] = key
+        apps.append(value)
     ### end: get the appSKey of the application ###
     ### get the nwkSKey of the application ###
     NwkSKey = search_key(device_data, "nwkSKey")
     for index, value in enumerate(NwkSKey):
-        key = NwkSKey[index]
-        subItem["NwkSKey"] = key
+        nets.append(value)
     ### end: get the nwkSKey of the application ###
     device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
     device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
     for index, value in enumerate(device_ID):
-        key = device_ID[index]
-        subItem["Device ID"] = key
-    print(subItem)
-    appData.append(subItem)
-for key, value in zip(application_NAME, appData):
-    if key in data:
-        data[key].append(value)
-    else:
-        data[key] = [value]
+        dev_ids.append(value)
+    sub_data = [
+        {
+            "Device Type": device,
+            "AppSKey": app,
+            "NwkSKey": net,
+            "Device ID": dev_id
+        }
+    for device, app, net, dev_id in zip(devices, apps, nets, dev_ids)
+    ]
+    #print(sub_data)
+    appData.append(sub_data)
+for key, value in zip(dev_names, appData):
+        if key in data:
+            data[key].append(value)
+        else:
+            data[key] = value
+print(data)
 for key, value in data.items():
     for sub_key, sub_value in enumerate(value):
         app_id = sub_value.get("Device ID")
@@ -256,18 +265,22 @@ for key, value in data.items():
         app_key = sub_value.get("AppSKey")
         net_key = sub_value.get("NwkSKey")
         payload = sub_value.get("Raw Payloads")
+        decripted_items = []
         try:
             for item in payload:
                 try:
                     output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
                     try:
                         print(output[15])
+                        decripted_items.append(output[15])
                     except:
                         pass
                 except:
                     pass
         except:
             pass
+        print(decripted_items)
+#print(data)
 ### refrence, do not delete ###
 #for item in device_id_list: 
 #    sublist = []
