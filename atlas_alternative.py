@@ -11,6 +11,8 @@ import csv
 import subprocess
 import re
 import fileinput
+import threading
+import sys
 #import io
 # set adress system
 ADDRESS = 'https://lorawan-ns-na.tektelic.com/api/'
@@ -76,9 +78,11 @@ def get_sensor_info(end_device_id):
             current_epoch_time = int(datetime.now(timezone(TZ)).timestamp()) * 1000 # this system will generate a current epoch time
             print("Curent epoch time:",current_epoch_time)
             str = f"{ADDRESS}device/{end_device_id}/log?lastMillis={current_epoch_time}&limit=100&lastIndex=9223372036854775807"
-            print(f"Connecting to: {str}...")
+            #print(f"Connecting to: {str}...")
+            start_spinner(f"Connecting to: {str}...")
             response_device = requests.get(f"{str}", headers = headers, timeout = 20)
             try:
+                stop_spinner()
                 print(f"<UPDATE> connection achived, data found at: {str}")
                 device_specs = response_device.json()
                 return device_specs
@@ -101,9 +105,11 @@ def get_device_from_app_ID(applicationID, value):
     while True:
         try:
             str = f"{ADDRESS}application/{applicationID}/devices"
-            print(f"Connecting to: {str}...")
+            #print(f"Connecting to: {str}...")
+            start_spinner(f"Connecting to: {str}...")
             response_data = requests.get(str, headers = headers, timeout = 20)
             try:
+                stop_spinner()
                 print(f"<UPDATE> connection achived, data found at: {str}")
                 application_data = response_data.json()
                 return application_data[value]
@@ -112,22 +118,6 @@ def get_device_from_app_ID(applicationID, value):
             break
         except:
             print(f"<UPDATE> can't acess application, retrying...")
-# this class should get the nwkSKey, appKey, and cntmsb
-#class get_specs:
-#    def __init__(self, applicationID):
-#        self.applicationID = applicationID
-#        self.output = get_device_from_app_ID(self.applicationID, "data")
-#    def allinfo(self):
-#        if len(self.output) != 0:
-#            return self.output
-#    def NwkSKey(self):
-#        if len(self.output) != 0:
-#            return self.output[0]["nwkSKey"]
-#    def AppSKey(self):
-#        if len(self.output) != 0:
-#            return self.output[0]["appSKey"]
-#    def cntmsb(self): # I still need some clarification on what this means
-#        pass
 def disp(list):
     for item in list:
         print(item)
@@ -188,99 +178,139 @@ def header(text):
     """
     ts = get_terminal_size()
     print(f"{'-' * ts.columns}\n{text.center(int(ts.columns))}\n{'-' * ts.columns}")
-def generate_unique_key(key, counter):
-    if counter == 0:
-        return 0
-    else:
-        return f"{key}({counter})"
-def create_dict(keys):
-    return {key: '' for key in keys}
+### This section is just to indicate if cirtan things are working ###
+spinner_active = False
+spinner_thread = None
+def loading_spinner(text, delay=0.1):
+    while spinner_active:
+        for char in '|/-\\':
+            sys.stdout.write('\r' + f'{text} {char}')
+            sys.stdout.flush()
+            sleep(delay)
+def start_spinner(text="Loading:", delay=0.1):
+    global spinner_active, spinner_thread
+    if not spinner_active:
+        # Start the spinner in a separate thread (only once)
+        spinner_active = True
+        spinner_thread = threading.Thread(target=loading_spinner, args=(text, delay))
+        spinner_thread.daemon = True
+        spinner_thread.start()
+def stop_spinner():
+    global spinner_active
+    if spinner_active:
+        spinner_active = False
+        spinner_thread.join()
+        #sys.stdout.write('\n')
+        sys.stdout.write('\n\r\033[A')
+        sys.stdout.flush()
+### ###
 ### Main code ###
-print("\u001b[2J\u001b[H")
-header("Tektelic NS Shell Interface")
-apps = get_active_applications() # get all the avalable apps
-application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
-application_NAME = search_key(apps, "name")
-application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
-data      = {}
-appData   = []
-dev_names = []
-for name in application_NAME:
-    dev_names.append(name)
-for id in application_ID: # get the application ID 
-    subItem = {}
-    #sub_data    = {}
-    devices = []
-    apps    = []
-    nets    = []
-    dev_ids = []
-    device_data = get_device_from_app_ID(id, "data") # search under the data key
-    ### get the device names ###
-    device_name = search_key(device_data, "deviceModelName")
-    for index, value in enumerate(device_name):
-        devices.append(value)
-    ### end: get the device names ###
-    ### get the appSKey of the application ###
-    AppSKey = search_key(device_data, "appSKey")
-    for index, value in enumerate(AppSKey):
-        apps.append(value)
-    ### end: get the appSKey of the application ###
-    ### get the nwkSKey of the application ###
-    NwkSKey = search_key(device_data, "nwkSKey")
-    for index, value in enumerate(NwkSKey):
-        nets.append(value)
-    ### end: get the nwkSKey of the application ###
-    device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
-    device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
-    for index, value in enumerate(device_ID):
-        dev_ids.append(value)
-    sub_data = [
-        {
-            "Device Type": device,
-            "AppSKey": app,
-            "NwkSKey": net,
-            "Device ID": dev_id
-        }
-    for device, app, net, dev_id in zip(devices, apps, nets, dev_ids)
-    ]
-    #print(sub_data)
-    appData.append(sub_data)
-for key, value in zip(dev_names, appData):
-        if key in data:
-            data[key].append(value)
-        else:
-            data[key] = value
-print(data)
-for key, value in data.items():
-    for sub_key, sub_value in enumerate(value):
-        app_id = sub_value.get("Device ID")
-        if app_id != None:
-            #print(sub_value)
-            device_specs = get_sensor_info(app_id)
-            rawPayload = search_key(device_specs, "rawPayload")
-            #print(rawPayload)
-            del sub_value["Device ID"]
-            sub_value["Raw Payloads"] = rawPayload
-            print(sub_value)
-        app_key = sub_value.get("AppSKey")
-        net_key = sub_value.get("NwkSKey")
-        payload = sub_value.get("Raw Payloads")
-        decripted_items = []
-        try:
-            for item in payload:
-                try:
-                    output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
+if __name__ == "__main__":
+#def main():
+    #print("\u001b[2J\u001b[H")
+    sys.stdout.write("\u001b[2J\u001b[H\033[?25l")
+    sys.stdout.flush()
+    header("Tektelic NS Shell Interface")
+    #start_spinner("Fetching apps...")
+    apps = get_active_applications() # get all the avalable apps
+    #stop_spinner()
+    application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
+    application_NAME = search_key(apps, "name")
+    application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
+    data      = {}
+    appData   = []
+    dev_names = []
+    for name in application_NAME:
+        dev_names.append(name)
+    for id in application_ID: # get the application ID 
+        subItem = {}
+        devices = []
+        apps    = []
+        nets    = []
+        dev_ids = []
+        #start_spinner("Searching for application...")
+        device_data = get_device_from_app_ID(id, "data") # search under the data key
+        #stop_spinner()
+        ### get the device names ###
+        device_name = search_key(device_data, "deviceModelName")
+        for index, value in enumerate(device_name):
+            devices.append(value)
+        ### end: get the device names ###
+        ### get the appSKey of the application ###
+        AppSKey = search_key(device_data, "appSKey")
+        for index, value in enumerate(AppSKey):
+            apps.append(value)
+        ### end: get the appSKey of the application ###
+        ### get the nwkSKey of the application ###
+        NwkSKey = search_key(device_data, "nwkSKey")
+        for index, value in enumerate(NwkSKey):
+            nets.append(value)
+        ### end: get the nwkSKey of the application ###
+        device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
+        device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
+        for index, value in enumerate(device_ID):
+            dev_ids.append(value)
+        sub_data = [
+            {
+                "Device Type": device,
+                "AppSKey": app,
+                "NwkSKey": net,
+                "Device ID": dev_id
+            }
+        for device, app, net, dev_id in zip(devices, apps, nets, dev_ids)
+        ]
+        #print(sub_data)
+        appData.append(sub_data)
+    for key, value in zip(dev_names, appData):
+            if key in data:
+                data[key].append(value)
+            else:
+                data[key] = value
+    #print(data)
+    for key, value in data.items():
+        for sub_key, sub_value in enumerate(value):
+            app_id = sub_value.get("Device ID")
+            if app_id != None:
+                #print(sub_value)
+                #start_spinner("Collecting device info...")
+                device_specs = get_sensor_info(app_id)
+                #stop_spinner()
+                rawPayload = search_key(device_specs, "rawPayload")
+                #print(rawPayload)
+                del sub_value["Device ID"]
+                sub_value["Raw Payloads"] = rawPayload
+                #print(sub_value)
+            app_key = sub_value.get("AppSKey")
+            net_key = sub_value.get("NwkSKey")
+            payload = sub_value.get("Raw Payloads")
+            decripted_items = []
+            try:
+                for index, item in enumerate(payload):
                     try:
-                        print(output[15])
-                        decripted_items.append(output[15])
+                        output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
+                        print(f"Colleting item: {index}\r\033[A")
+                        try:
+                            #print(output[15])
+                            #decripted_items.append(output[15])
+                            modified_text = re.findall(r'[0-9-A-F]+', output[15])
+                            #print(modified_text[0])
+                            decripted_items.append(modified_text[0])
+                        except:
+                            pass
                     except:
                         pass
-                except:
-                    pass
-        except:
-            pass
-        print(decripted_items)
-#print(data)
+            except:
+                pass
+            #print(decripted_items)
+            del sub_value["AppSKey"]
+            del sub_value["NwkSKey"]
+            del sub_value["Raw Payloads"]
+            sub_value["Decripted Information"] = decripted_items
+    print(data)
+    sys.stdout.write("\033[?25h")
+    sys.stdout.flush()
+    #stop_spinner()
+#if __name__ == "__main__":
 ### refrence, do not delete ###
 #for item in device_id_list: 
 #    sublist = []
