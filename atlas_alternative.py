@@ -33,7 +33,7 @@ def login(): # this function will log into the NS
             return token
             break
         else:
-            print(f"<UPDATE> server connection faliture.\nERROR: [{response_token.status_code}]\n", "Retrying...")
+            print(f"\r\033[A<UPDATE> server connection faliture.\nERROR: [{response_token.status_code}]\n", "Retrying...")
             exit()
 token = login()
 print(token)
@@ -57,10 +57,10 @@ def get_active_applications():
                 applications_list = response_applications.json()
                 return applications_list
             else:
-                print(f"<UPDATE> connection not found.\nERROR: [{response_applications.status_code}]")
+                print(f"\r\033[A<UPDATE> connection not found.\nERROR: [{response_applications.status_code}]")
             break
         except:
-            print("<UPDATE> can't acess applications, retrying...")
+            print("\r\033[A<UPDATE> can't acess applications, retrying...")
 #apps = get_active_applications()
 #print(apps)
 # this function returns all the speifications that a device has based on it's ID
@@ -76,7 +76,7 @@ def get_sensor_info(end_device_id):
             # generate current epoch time
             TZ = 'MST' # this will use the current timezone
             current_epoch_time = int(datetime.now(timezone(TZ)).timestamp()) * 1000 # this system will generate a current epoch time
-            print("Curent epoch time:",current_epoch_time)
+            #print("Curent epoch time:",current_epoch_time)
             str = f"{ADDRESS}device/{end_device_id}/log?lastMillis={current_epoch_time}&limit=100&lastIndex=9223372036854775807"
             #print(f"Connecting to: {str}...")
             start_spinner(f"Connecting to: {str}...")
@@ -91,7 +91,8 @@ def get_sensor_info(end_device_id):
             break
         except:
             #timeout += 5
-            print("<UPDATE> can't acess device, retrying...")
+            #print("\r\033[A<UPDATE> can't acess device, retrying...")
+            pass
 #device_specs = get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914") # this contains the device's id, not to be confued with the aplication id
 #print(device_specs)
 # this function will get all the data from the aplication id, and return the deice id
@@ -117,7 +118,8 @@ def get_device_from_app_ID(applicationID, value):
                 print(f"<UPDATE> device either not found or bad ID used.\nERROR: [{response_data.status_code}]")
             break
         except:
-            print(f"<UPDATE> can't acess application, retrying...")
+            #print(f"<UPDATE> can't acess application, retrying...")
+            pass
 def disp(list):
     for item in list:
         print(item)
@@ -290,11 +292,10 @@ if __name__ == "__main__":
                         output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
                         print(f"Colleting item: {index}\r\033[A")
                         try:
-                            #print(output[15])
-                            #decripted_items.append(output[15])
                             modified_text = re.findall(r'[0-9-A-F]+', output[15])
-                            #print(modified_text[0])
+                            #modified_text = {s for s in re.findall(r'[0-9-A-F]+', output[15]) if s.startswith('0')}
                             decripted_items.append(modified_text[0])
+                            #decripted_items.append({s for s in modified_text[0] if s.startswith('0')})
                         except:
                             pass
                     except:
@@ -306,6 +307,57 @@ if __name__ == "__main__":
             del sub_value["NwkSKey"]
             del sub_value["Raw Payloads"]
             sub_value["Decripted Information"] = decripted_items
+    #print(data)
+    for key, value in data.items():
+        for item in value:
+            if item.get("Device Type") == "KIWI":
+                #for hex in item.get("Decripted Information"):
+                    #print(hex)
+                #print({s for s in item.get("Decripted Information") if s.startswith('0')})
+                item.update({"Decripted Information": {s for s in item.get("Decripted Information") if s.startswith('0')}})
+                for subitem in item["Decripted Information"]:
+                    #print(subitem)
+                    pairs = [subitem[i:i+2] for i in range(0, len(subitem), 2)]
+                    converted_item = ', '.join([f"0X{pair}" for pair in pairs])
+                    #print(converted_item)
+
+                    fileName = "kiwi-clover-v2.0-decoder.js"
+                    line_number_to_mod = 4
+                    new_line_content = f"    var bytes = convertToUint8Array([{converted_item}]);"
+                    try:
+                        for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
+                            if line_number == line_number_to_mod:
+                                print(new_line_content)
+                            else:
+                                print(line, end = "")
+                    except FileNotFoundError:
+                        print("file not found")
+                    except Exception as e:
+                        print("Error occured while modifying the file")
+                    system('node kiwi-clover-v2.0-decoder.js')
+
+            elif item.get("Device Type") == "Industrial Sensor":
+                #for hex in item.get("Decripted Information"):
+                #    print(hex)
+                #print({s for s in item.get("Decripted Information") if s.startswith('0')})
+                item.update({"Decripted Information": {s for s in item.get("Decripted Information") if s.startswith('0')}})
+                for subitem in item["Decripted Information"]:
+                    #print(subitem)
+                    pairs = [subitem[i:i+2] for i in range(0, len(subitem), 2)]
+                    converted_item = ', '.join([f"0X{pair}" for pair in pairs])
+                    print(converted_item)
+            elif item.get("Device Type") == "Home Sensor":
+                #for hex in item.get("Decripted Information"):
+                #    print(hex)
+                #print({s for s in item.get("Decripted Information") if s.startswith('0')})
+                item.update({"Decripted Information": {s for s in item.get("Decripted Information") if s.startswith('0')}})
+                for subitem in item["Decripted Information"]:
+                    #print(subitem)
+                    pairs = [subitem[i:i+2] for i in range(0, len(subitem), 2)]
+                    converted_item = ', '.join([f"0X{pair}" for pair in pairs])
+                    print(converted_item)
+            else:
+                pass
     print(data)
     sys.stdout.write("\033[?25h")
     sys.stdout.flush()
