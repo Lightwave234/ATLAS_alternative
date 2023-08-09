@@ -308,17 +308,48 @@ if __name__ == "__main__":
             del sub_value["Raw Payloads"]
             sub_value["Decripted Information"] = decripted_items
     #print(data)
+    check = []
     for key, value in data.items():
         for sub_key, sub_value in enumerate(value):
-            check = []
-            parts = sub_value.split()
-            if parts:
-                first_part = parts[0]
-                if first_part not in check:
-                    check.append(first_part)
-                    print(first_part)
-            else:
-                print('no str found')
+            #print(sub_value)
+            for item in sub_value['Decripted Information']:
+                #print(item)
+                #check = []
+                parts = item.split(', ')
+                if parts:
+                    first_part = parts[0]
+                    if first_part not in check:
+                        check.append(first_part)
+                        #print(first_part)
+                else:
+                    print('no str found')
+                ###
+                #if parts[0].startswith('0x05'):
+                cleaned_parts = [part.strip('\'') for part in parts]
+                #if item.startswith("'0x05'"):
+                if cleaned_parts[0] == "0x05":
+                    print(item)
+                    #fileName = "kiwi-clover-v2.0-decoder.js"
+                    #line_number_to_mod = 4
+                    #new_line_content = f"    var bytes = convertToUint8Array([{item}]);"
+                    #try:
+                    #    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
+                    #        if line_number == line_number_to_mod:
+                    #            print(new_line_content)
+                    #        else:
+                    #            print(line, end = "")
+                    #except FileNotFoundError:
+                    #    print("file not found")
+                    #except Exception as e:
+                    #    print("Error occured while modifying the file")
+                    ##system('node kiwi-clover-v2.0-decoder.js')
+                    #output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
+                    #print(output)
+                else:
+                    pass
+                    print(type(item))
+
+    print(check)
                 #print(sub_value)
             #if item.get("Device Type") == "KIWI":
             #    #for hex in item.get("Decripted Information"):
@@ -385,7 +416,6 @@ if __name__ == "__main__":
     sys.stdout.write("\033[?25h")
     sys.stdout.flush()
     #stop_spinner()
-#if __name__ == "__main__":
 ### refrence, do not delete ###
 #for item in device_id_list: 
 #    sublist = []
