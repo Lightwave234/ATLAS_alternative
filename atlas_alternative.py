@@ -180,8 +180,6 @@ def header(text):
     """
     ts = get_terminal_size()
     print(f"{'-' * ts.columns}\n{text.center(int(ts.columns))}\n{'-' * ts.columns}")
-def search_and_decript(hex):
-    pass
 ### This section is just to indicate if cirtan things are working ###
 spinner_active = False
 spinner_thread = None
@@ -208,6 +206,32 @@ def stop_spinner():
         sys.stdout.write('\n\r\033[A')
         sys.stdout.flush()
 ### ###
+def serch_and_decript(data, js_app):
+    #print(item)
+    #fileName = "kiwi-clover-v2.0-decoder.js"
+    #line_number_to_mod = 4
+    #new_line_content = f"    var bytes = convertToUint8Array([{item}]);"
+    #try:
+    #    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
+    #        if line_number == line_number_to_mod:
+    #            print(new_line_content)
+    #        else:
+    #            print(line, end = "")
+    #except FileNotFoundError:
+    #    print("file not found")
+    #except Exception as e:
+    #    print("Error occured while modifying the file")
+    ##system('node kiwi-clover-v2.0-decoder.js')
+    #output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
+    #json_string = ''.join(output)
+    ##json_object = json.loads(json_string)
+    ##print(f"{key}:", json_object)
+    ##print(f"{key}:", output)
+    ##print(type(output))
+    #print(json_string)
+#if item.startswith("0X05"):
+#    print(f"{key}:", output)
+    pass
 ### Main code ###
 if __name__ == "__main__":
 #def main():
@@ -323,31 +347,36 @@ if __name__ == "__main__":
                         #print(first_part)
                 else:
                     print('no str found')
-                ###
-                #if parts[0].startswith('0x05'):
-                cleaned_parts = [part.strip('\'') for part in parts]
-                #if item.startswith("'0x05'"):
-                if cleaned_parts[0] == "0x05":
-                    print(item)
-                    #fileName = "kiwi-clover-v2.0-decoder.js"
-                    #line_number_to_mod = 4
-                    #new_line_content = f"    var bytes = convertToUint8Array([{item}]);"
-                    #try:
-                    #    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
-                    #        if line_number == line_number_to_mod:
-                    #            print(new_line_content)
-                    #        else:
-                    #            print(line, end = "")
-                    #except FileNotFoundError:
-                    #    print("file not found")
-                    #except Exception as e:
-                    #    print("Error occured while modifying the file")
-                    ##system('node kiwi-clover-v2.0-decoder.js')
-                    #output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
-                    #print(output)
+                if item.startswith("0X05, 0X04"):
+                    #print(item)
+                    fileName = "kiwi-clover-v2.0-decoder.js"
+                    line_number_to_mod = 4
+                    new_line_content = f"    var bytes = convertToUint8Array([{item}]);"
+                    try:
+                        for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
+                            if line_number == line_number_to_mod:
+                                print(new_line_content)
+                            else:
+                                print(line, end = "")
+                    except FileNotFoundError:
+                        print("file not found")
+                    except Exception as e:
+                        print("Error occured while modifying the file")
+                    #system('node kiwi-clover-v2.0-decoder.js')
+                    output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
+                    json_string = ''.join(output)
+                    #json_object = json.loads(json_string)
+                    #print(f"{key}:", json_object)
+                    #print(f"{key}:", output)
+                    #print(type(output))
+                    print(json_string)
+                #if item.startswith("0X05"):
+                #    print(f"{key}:", output)
+                #elif item.startswith("0X00"):
+                #
                 else:
-                    pass
-                    print(type(item))
+                #    pass
+                    print(item)
 
     print(check)
                 #print(sub_value)
