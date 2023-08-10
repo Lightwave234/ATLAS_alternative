@@ -377,74 +377,9 @@ if __name__ == "__main__":
                 else:
                 #    pass
                     print(item)
-
     print(check)
-                #print(sub_value)
-            #if item.get("Device Type") == "KIWI":
-            #    #for hex in item.get("Decripted Information"):
-            #        #print(hex)
-            #    #print({s for s in item.get("Decripted Information") if s.startswith('0')})
-            #    item.update({"Decripted Information": {s for s in item.get("Decripted Information") if s.startswith('0')}})
-            #
-            #    #new_data = []
-            #    for subitem in item["Decripted Information"]:
-            #        #print(subitem)
-            #        pairs = [subitem[i:i+2] for i in range(0, len(subitem), 2)]
-            #        converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-            #        print(converted_item)
-            #
-            #        #fileName = "kiwi-clover-v2.0-decoder.js"
-            #        #line_number_to_mod = 4
-            #        #new_line_content = f"    var bytes = convertToUint8Array([{converted_item}]);"
-            #        #try:
-            #        #    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
-            #        #        if line_number == line_number_to_mod:
-            #        #            print(new_line_content)
-            #        #        else:
-            #        #            print(line, end = "")
-            #        #except FileNotFoundError:
-            #        #    print("file not found")
-            #        #except Exception as e:
-            #        #    print("Error occured while modifying the file")
-            #        ##system('node kiwi-clover-v2.0-decoder.js')
-            #        #output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
-            #        ##print(output)
-            #        ## Extracting the key-value pairs from the input list
-            #        #key_value_pairs = [item.split(':') for item in output[1:-1]]
-            #        ## Converting the key-value pairs into a dictionary
-            #        #converted_dict = {key.strip(): value.strip() for key, value in key_value_pairs}
-            #        #print(converted_dict)
-            #        #new_data = json.loads(str(output))
-            #        #print(new_data)
-            #        #new_data.append(output)
-            #    #print(new_data)
-            #
-            #elif item.get("Device Type") == "Industrial Sensor":
-            #    #for hex in item.get("Decripted Information"):
-            #    #    print(hex)
-            #    #print({s for s in item.get("Decripted Information") if s.startswith('0')})
-            #    item.update({"Decripted Information": {s for s in item.get("Decripted Information") if s.startswith('0')}})
-            #    for subitem in item["Decripted Information"]:
-            #        #print(subitem)
-            #        pairs = [subitem[i:i+2] for i in range(0, len(subitem), 2)]
-            #        converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-            #        print("Industrial Sensor",':',converted_item)
-            #elif item.get("Device Type") == "Home Sensor":
-            #    #for hex in item.get("Decripted Information"):
-            #    #    print(hex)
-            #    #print({s for s in item.get("Decripted Information") if s.startswith('0')})
-            #    item.update({"Decripted Information": {s for s in item.get("Decripted Information") if s.startswith('0')}})
-            #    for subitem in item["Decripted Information"]:
-            #        #print(subitem)
-            #        pairs = [subitem[i:i+2] for i in range(0, len(subitem), 2)]
-            #        converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-            #        print("Home Sensor",':',converted_item)
-            #else:
-            #    pass
-    #print(data)
     sys.stdout.write("\033[?25h")
     sys.stdout.flush()
-    #stop_spinner()
 ### refrence, do not delete ###
 #for item in device_id_list: 
 #    sublist = []
