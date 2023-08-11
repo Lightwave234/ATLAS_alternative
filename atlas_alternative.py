@@ -207,8 +207,8 @@ def stop_spinner():
         sys.stdout.flush()
 ### ###
 def serch_and_decript(data, js_app):
-    search_line = f"    var bytes = convertToUint8Array();"
-    replacement_line = f"   var bytes = convertToUint8Array([{data}]);"
+    search_line = "	var bytes = convertToUint8Array([]);"
+    replacement_line = f"	var bytes = convertToUint8Array([{data}]);"
     with fileinput.FileInput(js_app, inplace=True, backup='.bak') as file:
         for line in file:
             if search_line in line:
@@ -239,7 +239,6 @@ def serch_and_decript(data, js_app):
     #print(json_string)
 #if item.startswith("0X05"):
 #    print(f"{key}:", output)
-    pass
 ### Main code ###
 if __name__ == "__main__":
 #def main():
@@ -356,36 +355,33 @@ if __name__ == "__main__":
                 else:
                     print('no str found')
                 if item.startswith("0X05, 0X04"):
+                    print('kiwi')
                     fileName = "kiwi-clover-v2.0-decoder.js"
                     serch_and_decript(item, fileName)
-                    #line_number_to_mod = 4
-                    #new_line_content = f"    var bytes = convertToUint8Array([{item}]);"
-                    #try:
-                    #    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
-                    #        if line_number == line_number_to_mod:
-                    #            print(new_line_content)
-                    #        else:
-                    #            print(line, end = "")
-                    #except FileNotFoundError:
-                    #    print("file not found")
-                    #except Exception as e:
-                    #    print("Error occured while modifying the file")
-                    ##system('node kiwi-clover-v2.0-decoder.js')
-                    #output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
-                    #json_string = ''.join(output)
-                    ##json_object = json.loads(json_string)
-                    ##print(f"{key}:", json_object)
-                    ##print(f"{key}:", output)
-                    ##print(type(output))
-                    #print(json_string)
-                #if item.startswith("0X05"):
-                #    print(f"{key}:", output)
-                #elif item.startswith("0X00"):
-                #
+                elif item.startswith("0X00, 0XFF"): # this is for the comfort vivid v2.2
+                    print('comfort')
+                    #print(item)
+                    fileName = "comfort-vivid-v2.2-decoder.js"
+                    serch_and_decript(item, fileName)
+                elif item.startswith('0X09') or item.startswith('0X20'):
+                    print('edoctor')
+                    fileName = "edoctor-v0.15-decoder.js"
+                    serch_and_decript(item, fileName)
+                    #print(item)
+                #elif item.startswith('0X20'):
+                #    print('')
+                #    print(item)
                 else:
-                #    pass
-                    print(item)
+                    pass            
     print(check)
+    hex_stuff = []
+    for key, value in data.items():
+        for sub_key, sub_value in enumerate(value):
+            #print(sub_value)
+            for item in sub_value['Decripted Information']:
+                #print(item)
+                hex_stuff.append(item)
+    print(hex_stuff)
     sys.stdout.write("\033[?25h")
     sys.stdout.flush()
 ### refrence, do not delete ###
