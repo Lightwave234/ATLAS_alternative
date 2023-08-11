@@ -378,9 +378,11 @@ if __name__ == "__main__":
     for key, value in data.items():
         for sub_key, sub_value in enumerate(value):
             #print(sub_value)
+            sub = []
             for item in sub_value['Decripted Information']:
                 #print(item)
-                hex_stuff.append(item)
+                sub.append(item)
+        hex_stuff.append(sub)
     print(hex_stuff)
     sys.stdout.write("\033[?25h")
     sys.stdout.flush()
