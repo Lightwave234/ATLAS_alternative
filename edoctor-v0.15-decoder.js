@@ -2,9 +2,7 @@
 	var decoder = [];
 	var errors = [];
 	var bytes = convertToUint8Array([0X09, 0XAB, 0X03, 0X67, 0X00, 0XD5, 0X04, 0X68, 0X5F]);
-	/**/
-	var port = 10
-	/**/
+    var port = 10
 	decoded_data['raw'] = toHexString(bytes).toUpperCase();
 	decoded_data['port'] = port;
 	var input = {
@@ -684,6 +682,5 @@ if (input.fPort === 10) {
 		return arr;
 	}
     decoded_data["errors"] = errors;
-	console.log(decoded_data);
+    console.log(decoded_data)
     return decoded_data;
-	

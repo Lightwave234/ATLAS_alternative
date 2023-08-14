@@ -338,7 +338,15 @@ if __name__ == "__main__":
             del sub_value["NwkSKey"]
             del sub_value["Raw Payloads"]
             sub_value["Decripted Information"] = decripted_items
-    #print(data)
+    print(data)
+    while True:
+        try: 
+            with open('new.json', 'w') as file:
+                json.dump(data, file)
+                file.close()
+            break
+        except:
+            pass
     check = []
     for key, value in data.items():
         for sub_key, sub_value in enumerate(value):
