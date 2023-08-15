@@ -1,18 +1,13 @@
-//function decodeUplink(input){
+//DCG: v1.0.0
 
-	var decoded_data = {};
-	var decoder = [];
-	var errors = [];
-	var bytes = convertToUint8Array([0X00, 0X4D, 0X32, 0XE5, 0XA5, 0X10, 0XEA, 0XDD, 0X3E, 0X2F, 0XE6, 0XCD, 0XF1, 0X3E, 0XA9]);
-	/**/
-	var port = 10;
-	/**/
-	decoded_data['raw'] = toHexString(bytes).toUpperCase();
-	decoded_data['port'] = port;
-	var input = {
-		"fPort": port,
-	}
-	if(input.fPort === 101){
+var decoded_data = {};
+var decoder = [];
+var port = 100
+bytes = convertToUint8Array([]);
+decoded_data['raw'] = toHexString(bytes).toUpperCase();
+decoded_data['port'] = port;
+
+	if(port === 101){
 		decoder = [
 			{
 				key: [],
@@ -43,7 +38,7 @@
 		];
 	}
 
-if (input.fPort === 10) {
+if (port === 10) {
 	decoder = [
 		{
 			key: [0x00, 0xFF],
@@ -106,7 +101,7 @@ if (input.fPort === 10) {
 		},
 	];
 }
-if (input.fPort === 100) {
+if (port === 100) {
 	decoder = [
 		{
 			key: [0x00],
@@ -643,12 +638,12 @@ if (input.fPort === 100) {
 				}
 			}
 			if (!found) {
-				errors.push("Unable to decode header " + toHexString(header).toUpperCase());
+				decoded_data['error'] = "Unable to decode header " + toHexString(header).toUpperCase();
 				break;
 			}
 		}
 	} catch (error) {
-		errors = "Fatal decoder error";
+		decoded_data['error'] = "Fatal decoder error";
 	}
 
 	function slice(a, f, t) {
@@ -785,13 +780,5 @@ if (input.fPort === 100) {
 		}
 		return arr;
 	}
-
-    var output = {
-        "data": decoded_data,
-		"errors": errors,
-		"warnings": [],
-		"tektelicMetadata": input.tektelicMetadata
-    };
-	
-    return output;
-//}
+	console.log(decoded_data);
+	return decoded_data;

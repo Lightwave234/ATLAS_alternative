@@ -307,7 +307,12 @@ if __name__ == "__main__":
             app_id = sub_value.get("Device ID")
             if app_id != None:
                 device_specs = get_sensor_info(app_id)
-                rawPayload = search_key(device_specs, "rawPayload")
+                while True:
+                    try:
+                        rawPayload = search_key(device_specs, "rawPayload")
+                        break
+                    except:
+                        pass
                 del sub_value["Device ID"]
                 sub_value["Raw Payloads"] = rawPayload
             app_key = sub_value.get("AppSKey")
@@ -337,61 +342,92 @@ if __name__ == "__main__":
             del sub_value["AppSKey"]
             del sub_value["NwkSKey"]
             del sub_value["Raw Payloads"]
-            sub_value["Decripted Information"] = decripted_items
+            try:
+                sub_value["Decripted Information"] = decripted_items[0]
+            except:
+                pass
     print(data)
-    while True:
-        try: 
-            with open('new.json', 'w') as file:
-                json.dump(data, file)
-                file.close()
-            break
-        except:
-            pass
-    check = []
     for key, value in data.items():
-        for sub_key, sub_value in enumerate(value):
-            #print(sub_value)
-            for item in sub_value['Decripted Information']:
-                #print(item)
-                #check = []
-                parts = item.split(', ')
-                if parts:
-                    first_part = parts[0]
-                    if first_part not in check:
-                        check.append(first_part)
-                        #print(first_part)
+        #print(value)
+        for index, item in enumerate(value):
+            try:
+                #print(item['Device Type'],'\b:',item['Decripted Information'])
+                if item['Device Type'] == "KIWI" or item['Device Type'] == "CLOVER":
+                    serch_and_decript(item['Decripted Information'], 'kiwi-clover-v2.0-decoder.js')
+                elif item['Device Type'] == "AURA" or item['Device Type'] == "FLUX":
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "BREEZE" or item['Device Type'] == "BREEZE-V":
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "COMFORT" or item['Device Type'] == "VIVID":
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "SEAL" or item['Device Type'] == "SEAL Ex":
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "SPARROW" or item['Device Type'] == "PELICAN":
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "TUNDRA":
+                    serch_and_decript(item['Decripted Information'], 'tundra-v1.4-decoder.js')
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "ORCA":
+                    print(item['Decripted Information'])
+                elif item['Device Type'] == "eDoctor":
+                    print(item['Decripted Information'])
                 else:
-                    print('no str found')
-                if item.startswith("0X05, 0X04"):
-                    print('kiwi')
-                    fileName = "kiwi-clover-v2.0-decoder.js"
-                    serch_and_decript(item, fileName)
-                elif item.startswith("0X00, 0XFF"): # this is for the comfort vivid v2.2
-                    print('comfort')
-                    #print(item)
-                    fileName = "comfort-vivid-v2.2-decoder.js"
-                    serch_and_decript(item, fileName)
-                elif item.startswith('0X09') or item.startswith('0X20'):
-                    print('edoctor')
-                    fileName = "edoctor-v0.15-decoder.js"
-                    serch_and_decript(item, fileName)
-                    #print(item)
-                #elif item.startswith('0X20'):
-                #    print('')
-                #    print(item)
-                else:
-                    pass            
-    print(check)
-    hex_stuff = []
-    for key, value in data.items():
-        for sub_key, sub_value in enumerate(value):
-            #print(sub_value)
-            sub = []
-            for item in sub_value['Decripted Information']:
-                #print(item)
-                sub.append(item)
-        hex_stuff.append(sub)
-    print(hex_stuff)
+                    pass
+            except:
+                pass
+    #while True:
+    #    try: 
+    #        with open('new.json', 'w') as file:
+    #            json.dump(data, file)
+    #            file.close()
+    #        break
+    #    except:
+    #        pass
+    #check = []
+    #for key, value in data.items():
+    #    for sub_key, sub_value in enumerate(value):
+    #        #print(sub_value)
+    #        for item in sub_value['Decripted Information']:
+    #            #print(item)
+    #            #check = []
+    #            parts = item.split(', ')
+    #            if parts:
+    #                first_part = parts[0]
+    #                if first_part not in check:
+    #                    check.append(first_part)
+    #                    #print(first_part)
+    #            else:
+    #                print('no str found')
+    #            if item.startswith("0X05, 0X04"):
+    #                print('kiwi')
+    #                fileName = "kiwi-clover-v2.0-decoder.js"
+    #                serch_and_decript(item, fileName)
+    #            elif item.startswith("0X00, 0XFF"): # this is for the comfort vivid v2.2
+    #                print('comfort')
+    #                #print(item)
+    #                fileName = "comfort-vivid-v2.2-decoder.js"
+    #                serch_and_decript(item, fileName)
+    #            elif item.startswith('0X09') or item.startswith('0X20'):
+    #                print('edoctor')
+    #                fileName = "edoctor-v0.15-decoder.js"
+    #                serch_and_decript(item, fileName)
+    #                #print(item)
+    #            #elif item.startswith('0X20'):
+    #            #    print('')
+    #            #    print(item)
+    #            else:
+    #                pass            
+    #print(check)
+    #hex_stuff = []
+    #for key, value in data.items():
+    #    for sub_key, sub_value in enumerate(value):
+    #        #print(sub_value)
+    #        sub = []
+    #        for item in sub_value['Decripted Information']:
+    #            #print(item)
+    #            sub.append(item)
+    #    hex_stuff.append(sub)
+    #print(hex_stuff)
     sys.stdout.write("\033[?25h")
     sys.stdout.flush()
 ### refrence, do not delete ###
