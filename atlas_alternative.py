@@ -53,7 +53,7 @@ def get_active_applications():
         try:
             response_applications = requests.get(f"{ADDRESS}customer/applications", headers = headers, timeout = 10)
             if response_applications.status_code == 200:
-                print(f"<UPDATE> connection achived, data found at {ADDRESS_SPLIT}")
+                print(f"<UPDATE> connection achived, data found at: {ADDRESS_SPLIT}")
                 applications_list = response_applications.json()
                 return applications_list
             else:
@@ -206,15 +206,64 @@ def stop_spinner():
         sys.stdout.write('\n\r\033[A')
         sys.stdout.flush()
 ### ###
-def serch_and_decript(data, js_app):
-    search_line = "	var bytes = convertToUint8Array([]);"
-    replacement_line = f"	var bytes = convertToUint8Array([{data}]);"
-    with fileinput.FileInput(js_app, inplace=True, backup='.bak') as file:
-        for line in file:
-            if search_line in line:
-                line = replacement_line + '\n'
-            print(line, end='')
-    system(f"node {js_app}")
+def search_and_decrypt(data, js_app):
+    check_file = stat(js_app).st_size
+
+    while True:
+        if check_file != 0:
+            search_line = " var bytes = convertToUint8Array([]);"
+            replacement_line = f"   var bytes = convertToUint8Array([{data}]);"
+            
+            with fileinput.FileInput(js_app, inplace=True, backup='.bak') as file:
+                for line in file:
+                    if search_line in line:
+                        line = replacement_line + '\n'
+                    print(line, end='')
+
+            result = subprocess.run(f'node {js_app}', capture_output=True, text=True, shell=True, cwd=None)
+            try:
+                result_stdout = result.stdout.strip().split(', ')
+
+                json_dict = {}
+                for item in result_stdout:
+                    key, value = item.split(': ')
+                    key = key.strip('{}')
+                    json_dict[key] = value.strip('{}')
+                new_result = json.dumps(json_dict, indent=2)
+                new_result = new_result.replace('\n', '')
+                return new_result
+            except:
+                result_stdout = result.stdout.strip().split('\n')
+                json_dict = {}
+                key = None
+                for item in result_stdout:
+                    if item == '{':
+                        continue
+                    elif item == '}':
+                        break
+                    elif ':' in item:
+                        #key, value = item.split(':')
+                        #json_dict[key.strip()] = value.strip(',')
+
+                        key, value = item.split(':')
+                        key = key.strip()
+                        if value.strip().startswith('['):
+                            # Handling array values
+                            json_dict[key] = json.loads(value)
+                        else:
+                            json_dict[key] = value.strip(',')
+
+                    else:
+                        value = item.strip(',')
+                        #json_dict[key] += ' ' + value if key is not None else value
+                        if key is not None:
+                            # Concatenate non-string values
+                            json_dict[key] += ' ' + value
+                new_result = json.dumps(json_dict, indent=2)
+                new_result = new_result.replace('\n', '')
+                return new_result
+        else:
+            break
     #print(item)
     #fileName = "kiwi-clover-v2.0-decoder.js"
     #line_number_to_mod = 4
@@ -240,268 +289,203 @@ def serch_and_decript(data, js_app):
 #if item.startswith("0X05"):
 #    print(f"{key}:", output)
 ### Main code ###
-if __name__ == "__main__":
+#if __name__ == "__main__":
 #def main():
-    #print("\u001b[2J\u001b[H")
-    sys.stdout.write("\u001b[2J\u001b[H\033[?25l")
-    sys.stdout.flush()
-    header("Tektelic NS Shell Interface")
-    #start_spinner("Fetching apps...")
-    apps = get_active_applications() # get all the avalable apps
+#print("\u001b[2J\u001b[H")
+sys.stdout.write("\u001b[2J\u001b[H\033[?25l")
+sys.stdout.flush()
+header("Tektelic NS Shell Interface")
+#start_spinner("Fetching apps...")
+apps = get_active_applications() # get all the avalable apps
+#stop_spinner()
+application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
+application_NAME = search_key(apps, "name")
+application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
+data      = {}
+appData   = []
+dev_names = []
+for name in application_NAME:
+    dev_names.append(name)
+for id in application_ID: # get the application ID 
+    subItem = {}
+    devices = []
+    apps    = []
+    nets    = []
+    dev_ids = []
+    #start_spinner("Searching for application...")
+    device_data = get_device_from_app_ID(id, "data") # search under the data key
     #stop_spinner()
-    application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
-    application_NAME = search_key(apps, "name")
-    application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
-    data      = {}
-    appData   = []
-    dev_names = []
-    for name in application_NAME:
-        dev_names.append(name)
-    for id in application_ID: # get the application ID 
-        subItem = {}
-        devices = []
-        apps    = []
-        nets    = []
-        dev_ids = []
-        #start_spinner("Searching for application...")
-        device_data = get_device_from_app_ID(id, "data") # search under the data key
-        #stop_spinner()
-        ### get the device names ###
-        device_name = search_key(device_data, "deviceModelName")
-        for index, value in enumerate(device_name):
-            devices.append(value)
-        ### end: get the device names ###
-        ### get the appSKey of the application ###
-        AppSKey = search_key(device_data, "appSKey")
-        for index, value in enumerate(AppSKey):
-            apps.append(value)
-        ### end: get the appSKey of the application ###
-        ### get the nwkSKey of the application ###
-        NwkSKey = search_key(device_data, "nwkSKey")
-        for index, value in enumerate(NwkSKey):
-            nets.append(value)
-        ### end: get the nwkSKey of the application ###
-        device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
-        device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
-        for index, value in enumerate(device_ID):
-            dev_ids.append(value)
-        sub_data = [
-            {
-                "Device Type": device,
-                "AppSKey": app,
-                "NwkSKey": net,
-                "Device ID": dev_id
-            }
-        for device, app, net, dev_id in zip(devices, apps, nets, dev_ids)
-        ]
-        #print(sub_data)
-        appData.append(sub_data)
-    for key, value in zip(dev_names, appData):
-            if key in data:
-                data[key].append(value)
-            else:
-                data[key] = value
-    #print(data)
-    for key, value in data.items():
-        for sub_key, sub_value in enumerate(value):
-            app_id = sub_value.get("Device ID")
-            if app_id != None:
-                device_specs = get_sensor_info(app_id)
-                while True:
-                    try:
-                        rawPayload = search_key(device_specs, "rawPayload")
-                        break
-                    except:
-                        pass
-                del sub_value["Device ID"]
-                sub_value["Raw Payloads"] = rawPayload
-            app_key = sub_value.get("AppSKey")
-            net_key = sub_value.get("NwkSKey")
-            payload = sub_value.get("Raw Payloads")
-            decripted_items = []
-            try:
-                for index, item in enumerate(payload):
-                    try:
-                        output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
-                        print(f"Colleting item: {index}\r\033[A")
-                        try:
-                            modified_text = re.findall(r'[0-9-A-F]+', output[15])
-                            pairs = [modified_text[0][i:i+2] for i in range(0, len(modified_text[0]), 2)]
-                            converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-                            decripted_items.append(converted_item)
-                        except:
-                            pass
-                    except:
-                        pass
-            except:
-                pass
-#            for item in decripted_items:
-#                    pairs = [item[i:i+2] for i in range(0, len(item), 2)]
-#                    converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-            #print(decripted_items)
-            del sub_value["AppSKey"]
-            del sub_value["NwkSKey"]
-            del sub_value["Raw Payloads"]
-            try:
-                sub_value["Decripted Information"] = decripted_items[0]
-            except:
-                pass
-    print(data)
-    for key, value in data.items():
-        #print(value)
-        for index, item in enumerate(value):
-            try:
-                #print(item['Device Type'],'\b:',item['Decripted Information'])
-                if item['Device Type'] == "KIWI" or item['Device Type'] == "CLOVER":
-                    serch_and_decript(item['Decripted Information'], 'kiwi-clover-v2.0-decoder.js')
-                elif item['Device Type'] == "AURA" or item['Device Type'] == "FLUX":
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "BREEZE" or item['Device Type'] == "BREEZE-V":
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "COMFORT" or item['Device Type'] == "VIVID":
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "SEAL" or item['Device Type'] == "SEAL Ex":
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "SPARROW" or item['Device Type'] == "PELICAN":
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "TUNDRA":
-                    serch_and_decript(item['Decripted Information'], 'tundra-v1.4-decoder.js')
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "ORCA":
-                    print(item['Decripted Information'])
-                elif item['Device Type'] == "eDoctor":
-                    print(item['Decripted Information'])
-                else:
+    ### get the device names ###
+    device_name = search_key(device_data, "deviceModelName")
+    for index, value in enumerate(device_name):
+        devices.append(value)
+    ### end: get the device names ###
+    ### get the appSKey of the application ###
+    AppSKey = search_key(device_data, "appSKey")
+    for index, value in enumerate(AppSKey):
+        apps.append(value)
+    ### end: get the appSKey of the application ###
+    ### get the nwkSKey of the application ###
+    NwkSKey = search_key(device_data, "nwkSKey")
+    for index, value in enumerate(NwkSKey):
+        nets.append(value)
+    ### end: get the nwkSKey of the application ###
+    device_INFO = search_key(device_data, "id") # search the 'id' key, for the device information
+    device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
+    for index, value in enumerate(device_ID):
+        dev_ids.append(value)
+    sub_data = [
+        {
+            "Device Type": device,
+            "AppSKey": app,
+            "NwkSKey": net,
+            "Device ID": dev_id
+        }
+    for device, app, net, dev_id in zip(devices, apps, nets, dev_ids)
+    ]
+    #print(sub_data)
+    appData.append(sub_data)
+for key, value in zip(dev_names, appData):
+        if key in data:
+            data[key].append(value)
+        else:
+            data[key] = value
+#print(data)
+for key, value in data.items():
+    for sub_key, sub_value in enumerate(value):
+        app_id = sub_value.get("Device ID")
+        if app_id != None:
+            device_specs = get_sensor_info(app_id)
+            while True:
+                try:
+                    rawPayload = search_key(device_specs, "rawPayload")
+                    break
+                except:
                     pass
-            except:
-                pass
-    #while True:
-    #    try: 
-    #        with open('new.json', 'w') as file:
-    #            json.dump(data, file)
-    #            file.close()
-    #        break
-    #    except:
-    #        pass
-    #check = []
-    #for key, value in data.items():
-    #    for sub_key, sub_value in enumerate(value):
-    #        #print(sub_value)
-    #        for item in sub_value['Decripted Information']:
-    #            #print(item)
-    #            #check = []
-    #            parts = item.split(', ')
-    #            if parts:
-    #                first_part = parts[0]
-    #                if first_part not in check:
-    #                    check.append(first_part)
-    #                    #print(first_part)
-    #            else:
-    #                print('no str found')
-    #            if item.startswith("0X05, 0X04"):
-    #                print('kiwi')
-    #                fileName = "kiwi-clover-v2.0-decoder.js"
-    #                serch_and_decript(item, fileName)
-    #            elif item.startswith("0X00, 0XFF"): # this is for the comfort vivid v2.2
-    #                print('comfort')
-    #                #print(item)
-    #                fileName = "comfort-vivid-v2.2-decoder.js"
-    #                serch_and_decript(item, fileName)
-    #            elif item.startswith('0X09') or item.startswith('0X20'):
-    #                print('edoctor')
-    #                fileName = "edoctor-v0.15-decoder.js"
-    #                serch_and_decript(item, fileName)
-    #                #print(item)
-    #            #elif item.startswith('0X20'):
-    #            #    print('')
-    #            #    print(item)
-    #            else:
-    #                pass            
-    #print(check)
-    #hex_stuff = []
-    #for key, value in data.items():
-    #    for sub_key, sub_value in enumerate(value):
-    #        #print(sub_value)
-    #        sub = []
-    #        for item in sub_value['Decripted Information']:
-    #            #print(item)
-    #            sub.append(item)
-    #    hex_stuff.append(sub)
-    #print(hex_stuff)
-    sys.stdout.write("\033[?25h")
-    sys.stdout.flush()
-### refrence, do not delete ###
-#for item in device_id_list: 
-#    sublist = []
-#    for device_id in item:
-#        device_specs = get_sensor_info(device_id) # this is where the devices are logged into
-#        #print(device_specs)
-#        rawPayload = search_key(device_specs, "rawPayload") # this is where to get the payloads
-#        #print(rawPayload)
-#        sublist.append(rawPayload) # store all the raw payloads into a sub-list to later be used with the NwkSKeys and AppSKeys
-#    rawPayload_list.append(sublist) # put the sblist into a larger list
-#for item in application_ID: # for every item in the application_ID list, identify, but do not use blanks
-#    if len(item) != 0:
-#    #if not len(item):
-#        appSpecs = get_specs(item) # assign the id to an object, and then pull out specific info
-#        if not appSpecs.NwkSKey():
-#            pass
-#        else:
-#            NwkSKeys.append(appSpecs.NwkSKey())
-#        if not appSpecs.AppSKey():
-#            pass
-#        else:
-#            AppSKeys.append(appSpecs.AppSKey())
-#print("Secret NwkSKeys:\n",NwkSKeys,f"\n{len(NwkSKeys)} total items.\nSecret AppSKeys:\n",AppSKeys,f"\n{len(AppSKeys)} total items.")
-#i = 0
-#for sublist in rawPayload_list:
-#    decode_items = []
-#    for j, item in enumerate(sublist):
-#        output = run_extern_program(f"lora-packet-decode --nwkkey {NwkSKeys[i]} --appkey {AppSKeys[i]} --base64 {item}")
-#        decode_items.append(output)
-#    i += 1
-#    FRMPayload_decript.append(decode_items)
-####
-#print("FRMPayload_decript has:",len(FRMPayload_decript),"items")
-####
-#for sublist in FRMPayload_decript:
-#    for item in sublist:
-#        for subitem in item:
-#            try:
-#                modified_text = re.findall(r'[0-9-A-F]+', item[15])
-#                if len(modified_text) == 0:
-#                    pass
-#                else:
-#                    decrpited_info.append(modified_text[0])
-#            except:
-#                pass
-#for item in decrpited_info:
-#    hex_starting_with_0 = {s for s in decrpited_info if s.startswith('0')}
-#    unique_hex = list(set(hex_starting_with_0))
-#for item in unique_hex:
-#    pairs = [item[i:i+2] for i in range(0, len(item), 2)]
-#    converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-#    hex.append(converted_item)
-#print(hex)
-#print(device_names)
-#for item in hex:
-#    print(item)
-#for item in device_names:
-#    print(item)
-##for item in hex:
-##    print(item)
-#### this is where I will pass one of the arguments into the application before executing it ###
-##file = open(r"C:\Users\lbarnowski\documents\src\new.txt", "r")
-#fileName = "kiwi-clover-v2.0-decoder.js"
-#line_number_to_mod = 4
-#new_line_content = "    var bytes = convertToUint8Array([]);"
-#try:
-#    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
-#        if line_number == line_number_to_mod:
-#            print(new_line_content)
-#        else:
-#            print(line, end = "")
-#except FileNotFoundError:
-#    print("file not found")
-#except Exception as e:
-#    print("Error occured while modifying the file")
+            del sub_value["Device ID"]
+            sub_value["Raw Payloads"] = rawPayload
+        app_key = sub_value.get("AppSKey")
+        net_key = sub_value.get("NwkSKey")
+        payload = sub_value.get("Raw Payloads")
+        decripted_items = []
+        try:
+            for index, item in enumerate(payload):
+                try:
+                    output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
+                    print(f"Colleting item: {index}\r\033[A")
+                    try:
+                        modified_text = re.findall(r'[0-9-A-F]+', output[15])
+                        pairs = [modified_text[0][i:i+2] for i in range(0, len(modified_text[0]), 2)]
+                        converted_item = ', '.join([f"0X{pair}" for pair in pairs])
+                        decripted_items.append(converted_item)
+                    except:
+                        pass
+                except:
+                    pass
+        except:
+            pass
+        del sub_value["AppSKey"]
+        del sub_value["NwkSKey"]
+        del sub_value["Raw Payloads"]
+        try:
+            sub_value["Decripted Information"] = decripted_items[0]
+        except:
+            pass
+#print(data)
+for key, value in data.items():
+    print(key)
+    merged_sub_dicts = []
+    for index, item in enumerate(value):
+    #for item in value:
+        try:
+            if item['Device Type'] == "KIWI" or item['Device Type'] == "CLOVER":
+                out = search_and_decrypt(item['Decripted Information'], 'kiwi-clover-v2.0-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "AURA" or item['Device Type'] == "FLUX":
+                out = search_and_decrypt(item['Decripted Information'], 'aura-flux-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "BREEZE" or item['Device Type'] == "BREEZE-V":
+                out = search_and_decrypt(item['Decripted Information'], 'breeze-v1.0-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "COMFORT" or item['Device Type'] == "VIVID":
+                out = search_and_decrypt(item['Decripted Information'], 'comfort-vivid-v2.2-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "SEAL" or item['Device Type'] == "SEAL Ex":
+                out = search_and_decrypt(item['Decripted Information'], 'seal-v0.8-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "SPARROW" or item['Device Type'] == "PELICAN":
+                print(key)
+                #print(key,'\b:',item['Device Type'],'\b:')
+                out = search_and_decrypt(item['Decripted Information'], 'sparrow-pelican-v2.8-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "TUNDRA":
+                #print(key,'\b:',item['Device Type'],'\b:')
+                out = search_and_decrypt(item['Decripted Information'], 'tundra-v2.1-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "ORCA":
+                #print(key,'\b:',item['Device Type'],'\b:')
+                out = search_and_decrypt(item['Decripted Information'], 'orca-v0.14-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            elif item['Device Type'] == "eDoctor":
+                out = search_and_decrypt(item['Decripted Information'], 'edoctor-v0.15-decoder.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+            else:
+                out = search_and_decrypt(item['Decripted Information'], 'passthrough.js')
+                out = json.loads(out)
+                merge = {**item, **out}
+                merged_sub_dicts.append(merge)
+                print(key, merge)
+        except:
+            pass
+    #print(merged_sub_dicts)
+    data[key] = merged_sub_dicts
+# Collect all unique keys from the merged sub-dictionaries
+all_keys = set()
+for sub_dicts in data.values():
+    for sub_dict in sub_dicts:
+        all_keys.update(sub_dict.keys())
+
+# Create a list of rows to be written to the CSV
+rows = []
+for main_key, sub_dicts in data.items():
+    for sub_dict in sub_dicts:
+        row = [main_key] + [sub_dict.get(key, '') for key in all_keys]
+        rows.append(row)
+
+# Convert to DataFrame
+df = pd.DataFrame(rows, columns=['Application'] + list(all_keys))
+
+# Convert to CSV
+csv_file = 'merged_data.csv'
+df.to_csv(csv_file, index=False)
+
+print(f'Data written to {csv_file}')
+sys.stdout.write("\033[?25h")
+sys.stdout.flush()
