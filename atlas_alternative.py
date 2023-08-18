@@ -13,7 +13,6 @@ import re
 import fileinput
 import threading
 import sys
-#import io
 # set adress system
 ADDRESS = 'https://lorawan-ns-na.tektelic.com/api/'
 ADDRESS_SPLIT = ADDRESS.split("/")[2]
@@ -37,7 +36,6 @@ def login(): # this function will log into the NS
             exit()
 token = login()
 print(token)
-#def get_sensor_info():
 headers = { # these are just 
     'Content-type' : 'application/json',
     'X-Authorization': f'Bearer {token}'
@@ -72,7 +70,6 @@ def get_sensor_info(end_device_id):
     """
     while True:
         try:
-            #timeout = 15
             # generate current epoch time
             TZ = 'MST' # this will use the current timezone
             current_epoch_time = int(datetime.now(timezone(TZ)).timestamp()) * 1000 # this system will generate a current epoch time
@@ -90,11 +87,8 @@ def get_sensor_info(end_device_id):
                 print(f"<UPDATE> device either not found or bad ID used.\nERROR: [{response_device.status_code}]")
             break
         except:
-            #timeout += 5
             #print("\r\033[A<UPDATE> can't acess device, retrying...")
             pass
-#device_specs = get_sensor_info("f14f94e0-1aa3-11ee-a7be-7974d8fad914") # this contains the device's id, not to be confued with the aplication id
-#print(device_specs)
 # this function will get all the data from the aplication id, and return the deice id
 def get_device_from_app_ID(applicationID, value):
     """
@@ -120,9 +114,6 @@ def get_device_from_app_ID(applicationID, value):
         except:
             #print(f"<UPDATE> can't acess application, retrying...")
             pass
-def disp(list):
-    for item in list:
-        print(item)
 # this function will read out all the data from a specific value 
 def search_key(json_to_use, value):
     """
@@ -149,19 +140,6 @@ def serch_nested_list(nested_list, name):
         if sublist[0] == name:
             return sublist[1]
     return None
-# this function will make a CSV file, based on the json list provided    
-def CSV_make(list_to_use, filename = 'new.csv'):
-    """
-    This function will create a csv using a list or json, and store the data in a csv file
-    :param list_to_use: specify the list/json
-    :param filename: give the file a name (optional), if no name is specified, the output will default to a file named 'new.csv'
-    :retun: None
-    """
-    if filename == None:
-        filename = 'New.csv'
-    df = pd.DataFrame(list_to_use)
-    df.to_csv(filename, index = False)
-    print(f"CSV file {filename} has been created")
 # this function will return the output from an external os command
 def run_extern_program(command):
     """
@@ -208,96 +186,68 @@ def stop_spinner():
 ### ###
 def search_and_decrypt(data, js_app):
     check_file = stat(js_app).st_size
-
     while True:
         if check_file != 0:
             search_line = " var bytes = convertToUint8Array([]);"
             replacement_line = f"   var bytes = convertToUint8Array([{data}]);"
-            
             with fileinput.FileInput(js_app, inplace=True, backup='.bak') as file:
                 for line in file:
                     if search_line in line:
                         line = replacement_line + '\n'
                     print(line, end='')
+            while True:
+                result = subprocess.run(f'node {js_app}', capture_output=True, text=True, shell=True, cwd=None)
+                if result != 0:
+                    try:
+                        result_stdout = result.stdout.strip().split(', ')
 
-            result = subprocess.run(f'node {js_app}', capture_output=True, text=True, shell=True, cwd=None)
-            try:
-                result_stdout = result.stdout.strip().split(', ')
-
-                json_dict = {}
-                for item in result_stdout:
-                    key, value = item.split(': ')
-                    key = key.strip('{}')
-                    json_dict[key] = value.strip('{}')
-                new_result = json.dumps(json_dict, indent=2)
-                new_result = new_result.replace('\n', '')
-                return new_result
-            except:
-                result_stdout = result.stdout.strip().split('\n')
-                json_dict = {}
-                key = None
-                for item in result_stdout:
-                    if item == '{':
-                        continue
-                    elif item == '}':
-                        break
-                    elif ':' in item:
-                        #key, value = item.split(':')
-                        #json_dict[key.strip()] = value.strip(',')
-
-                        key, value = item.split(':')
-                        key = key.strip()
-                        if value.strip().startswith('['):
-                            # Handling array values
-                            json_dict[key] = json.loads(value)
-                        else:
-                            json_dict[key] = value.strip(',')
-
-                    else:
-                        value = item.strip(',')
-                        #json_dict[key] += ' ' + value if key is not None else value
-                        if key is not None:
-                            # Concatenate non-string values
-                            json_dict[key] += ' ' + value
-                new_result = json.dumps(json_dict, indent=2)
-                new_result = new_result.replace('\n', '')
-                return new_result
+                        json_dict = {}
+                        for item in result_stdout:
+                            key, value = item.split(': ')
+                            key = key.strip('{}')
+                            json_dict[key] = value.strip('{}')
+                        new_result = json.dumps(json_dict, indent=2)
+                        new_result = new_result.replace('\n', '')
+                        return new_result
+                    except:
+                        result_stdout = result.stdout.strip().split('\n')
+                        json_dict = {}
+                        key = None
+                        for item in result_stdout:
+                            if item == '{':
+                                continue
+                            elif item == '}':
+                                break
+                            elif ':' in item:
+                                key, value = item.split(':')
+                                key = key.strip()
+                                if value.strip().startswith('['):
+                                    # Handling array values
+                                    try:
+                                        json_dict[key] = json.loads(value)
+                                    except:
+                                        json_dict[key] = value.strip(',')
+                                else:
+                                    json_dict[key] = value.strip(',')
+                            else:
+                                value = item.strip(',')
+                                #json_dict[key] += ' ' + value if key is not None else value
+                                if key is not None:
+                                    # Concatenate non-string values
+                                    json_dict[key] += ' ' + value
+                        new_result = json.dumps(json_dict, indent=2)
+                        new_result = new_result.replace('\n', '')
+                        return new_result
+                    break
+                else:
+                    return None
         else:
             break
-    #print(item)
-    #fileName = "kiwi-clover-v2.0-decoder.js"
-    #line_number_to_mod = 4
-    #new_line_content = f"    var bytes = convertToUint8Array([{item}]);"
-    #try:
-    #    for line_number, line in enumerate(fileinput.input(fileName, inplace = True, backup = '.bak'), 1):
-    #        if line_number == line_number_to_mod:
-    #            print(new_line_content)
-    #        else:
-    #            print(line, end = "")
-    #except FileNotFoundError:
-    #    print("file not found")
-    #except Exception as e:
-    #    print("Error occured while modifying the file")
-    ##system('node kiwi-clover-v2.0-decoder.js')
-    #output = run_extern_program('node kiwi-clover-v2.0-decoder.js')
-    #json_string = ''.join(output)
-    ##json_object = json.loads(json_string)
-    ##print(f"{key}:", json_object)
-    ##print(f"{key}:", output)
-    ##print(type(output))
-    #print(json_string)
-#if item.startswith("0X05"):
-#    print(f"{key}:", output)
 ### Main code ###
-#if __name__ == "__main__":
-#def main():
-#print("\u001b[2J\u001b[H")
 sys.stdout.write("\u001b[2J\u001b[H\033[?25l")
 sys.stdout.flush()
 header("Tektelic NS Shell Interface")
-#start_spinner("Fetching apps...")
 apps = get_active_applications() # get all the avalable apps
-#stop_spinner()
 application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
 application_NAME = search_key(apps, "name")
 application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
@@ -312,9 +262,7 @@ for id in application_ID: # get the application ID
     apps    = []
     nets    = []
     dev_ids = []
-    #start_spinner("Searching for application...")
     device_data = get_device_from_app_ID(id, "data") # search under the data key
-    #stop_spinner()
     ### get the device names ###
     device_name = search_key(device_data, "deviceModelName")
     for index, value in enumerate(device_name):
@@ -391,12 +339,10 @@ for key, value in data.items():
             sub_value["Decripted Information"] = decripted_items[0]
         except:
             pass
-#print(data)
+print(data)
 for key, value in data.items():
-    print(key)
     merged_sub_dicts = []
     for index, item in enumerate(value):
-    #for item in value:
         try:
             if item['Device Type'] == "KIWI" or item['Device Type'] == "CLOVER":
                 out = search_and_decrypt(item['Decripted Information'], 'kiwi-clover-v2.0-decoder.js')
@@ -428,23 +374,19 @@ for key, value in data.items():
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
                 print(key, merge)
-            elif item['Device Type'] == "SPARROW" or item['Device Type'] == "PELICAN":
-                print(key)
-                #print(key,'\b:',item['Device Type'],'\b:')
+            elif item['Device Type'] == "SPARROW" or item['Device Type'] == "PELICAN": # this is the right script, and the infromation looks right, but I don't understand why there are errors that are present
                 out = search_and_decrypt(item['Decripted Information'], 'sparrow-pelican-v2.8-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
                 print(key, merge)
             elif item['Device Type'] == "TUNDRA":
-                #print(key,'\b:',item['Device Type'],'\b:')
                 out = search_and_decrypt(item['Decripted Information'], 'tundra-v2.1-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
                 print(key, merge)
             elif item['Device Type'] == "ORCA":
-                #print(key,'\b:',item['Device Type'],'\b:')
                 out = search_and_decrypt(item['Decripted Information'], 'orca-v0.14-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
@@ -465,7 +407,9 @@ for key, value in data.items():
         except:
             pass
     #print(merged_sub_dicts)
+    print(data[key])
     data[key] = merged_sub_dicts
+    print(data[key])
 # Collect all unique keys from the merged sub-dictionaries
 all_keys = set()
 for sub_dicts in data.values():
