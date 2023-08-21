@@ -184,23 +184,29 @@ def stop_spinner():
         sys.stdout.write('\n\r\033[A')
         sys.stdout.flush()
 ### ###
+# This function will run a JS docoder while also replacing some information in the scrpit it's useing before executing and collecting the ouput
 def search_and_decrypt(data, js_app):
+    """
+    This function will run a JS docoder while also replacing some information in the scrpit it's useing before executing and collecting the ouput
+    :param app name: This takes a string of the application name, that will be used in the execution
+    :param hex string: This is where the hexidecimal string is used as new input data for the JS decoders
+    :return: new result JSON
+    """
     check_file = stat(js_app).st_size
     while True:
-        if check_file != 0:
-            search_line = " var bytes = convertToUint8Array([]);"
-            replacement_line = f"   var bytes = convertToUint8Array([{data}]);"
-            with fileinput.FileInput(js_app, inplace=True, backup='.bak') as file:
+        if check_file != 0:                                                         # make sure that the file isn't empty
+            search_line = " var bytes = convertToUint8Array([]);"                   # line to look for in the JS app
+            replacement_line = f"   var bytes = convertToUint8Array([{data}]);"     # line to replace with in the JS script
+            with fileinput.FileInput(js_app, inplace=True, backup='.bak') as file:  # write to and creat a backup of the JS script
                 for line in file:
                     if search_line in line:
                         line = replacement_line + '\n'
                     print(line, end='')
             while True:
-                result = subprocess.run(f'node {js_app}', capture_output=True, text=True, shell=True, cwd=None)
-                if result != 0:
-                    try:
+                result = subprocess.run(f'node {js_app}', capture_output=True, text=True, shell=True, cwd=None) # execute the specified script
+                if result != 0: # as long as the output isn't empty, run these lines of code
+                    try: # if this conversion system fails, go to the other one
                         result_stdout = result.stdout.strip().split(', ')
-
                         json_dict = {}
                         for item in result_stdout:
                             key, value = item.split(': ')
@@ -213,6 +219,7 @@ def search_and_decrypt(data, js_app):
                         result_stdout = result.stdout.strip().split('\n')
                         json_dict = {}
                         key = None
+                        # look for the start and stop of the output
                         for item in result_stdout:
                             if item == '{':
                                 continue
@@ -222,7 +229,7 @@ def search_and_decrypt(data, js_app):
                                 key, value = item.split(':')
                                 key = key.strip()
                                 if value.strip().startswith('['):
-                                    # Handling array values
+                                    # handle the array values
                                     try:
                                         json_dict[key] = json.loads(value)
                                     except:
@@ -231,7 +238,6 @@ def search_and_decrypt(data, js_app):
                                     json_dict[key] = value.strip(',')
                             else:
                                 value = item.strip(',')
-                                #json_dict[key] += ' ' + value if key is not None else value
                                 if key is not None:
                                     # Concatenate non-string values
                                     json_dict[key] += ' ' + value
@@ -247,10 +253,10 @@ def search_and_decrypt(data, js_app):
 sys.stdout.write("\u001b[2J\u001b[H\033[?25l")
 sys.stdout.flush()
 header("Tektelic NS Shell Interface")
-apps = get_active_applications() # get all the avalable apps
-application_INFO = search_key(apps, "id") # sort out every key that starts with 'id'
+apps = get_active_applications() # Get all the avalable applications from the network server
+application_INFO = search_key(apps, "id") # Sort out every key that starts with the key 'id'
 application_NAME = search_key(apps, "name")
-application_ID = search_key(application_INFO, "id") # sort every sub-key that stars with key
+application_ID = search_key(application_INFO, "id") # Sort every sub-key that stars with the key 'id'
 data      = {}
 appData   = []
 dev_names = []
@@ -262,7 +268,7 @@ for id in application_ID: # get the application ID
     apps    = []
     nets    = []
     dev_ids = []
-    device_data = get_device_from_app_ID(id, "data") # search under the data key
+    device_data = get_device_from_app_ID(id, "data") # Search under the 'data' key
     ### get the device names ###
     device_name = search_key(device_data, "deviceModelName")
     for index, value in enumerate(device_name):
@@ -282,6 +288,7 @@ for id in application_ID: # get the application ID
     device_ID = search_key(device_INFO, "id") # search the sub-key 'id' for the device ID
     for index, value in enumerate(device_ID):
         dev_ids.append(value)
+    ### Put all the respective key information into these keys ###
     sub_data = [
         {
             "Device Type": device,
@@ -289,16 +296,16 @@ for id in application_ID: # get the application ID
             "NwkSKey": net,
             "Device ID": dev_id
         }
-    for device, app, net, dev_id in zip(devices, apps, nets, dev_ids)
+    for device, app, net, dev_id in zip(devices, apps, nets, dev_ids) # assemble them together
     ]
-    #print(sub_data)
     appData.append(sub_data)
+### Assign the Main keys with the sub data of the devices ###
 for key, value in zip(dev_names, appData):
         if key in data:
             data[key].append(value)
         else:
             data[key] = value
-#print(data)
+hex = []
 for key, value in data.items():
     for sub_key, sub_value in enumerate(value):
         app_id = sub_value.get("Device ID")
@@ -306,12 +313,13 @@ for key, value in data.items():
             device_specs = get_sensor_info(app_id)
             while True:
                 try:
-                    rawPayload = search_key(device_specs, "rawPayload")
+                    rawPayload = search_key(device_specs, "rawPayload") # search for the key 'rawPayload' and retun their value
                     break
                 except:
                     pass
-            del sub_value["Device ID"]
-            sub_value["Raw Payloads"] = rawPayload
+            del sub_value["Device ID"] # delete this as it's no longer usefull
+            sub_value["Raw Payloads"] = rawPayload # replace it with this
+        # load the values of these keys to varables
         app_key = sub_value.get("AppSKey")
         net_key = sub_value.get("NwkSKey")
         payload = sub_value.get("Raw Payloads")
@@ -319,24 +327,41 @@ for key, value in data.items():
         try:
             for index, item in enumerate(payload):
                 try:
-                    output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}")
-                    print(f"Colleting item: {index}\r\033[A")
+                    output = run_extern_program(f"lora-packet-decode --nwkkey {net_key} --appkey {app_key} --base64 {item}") # This will take the raw payloads and conver them into an encrypted hexedecimal format
+                    print(f"Colleting item: {index}\r\033[A") # This is just to display the ammount of items that are coolected during this process
+                    #hex.append(output)
                     try:
-                        modified_text = re.findall(r'[0-9-A-F]+', output[15])
-                        pairs = [modified_text[0][i:i+2] for i in range(0, len(modified_text[0]), 2)]
-                        converted_item = ', '.join([f"0X{pair}" for pair in pairs])
-                        decripted_items.append(converted_item)
+                        modified_text = re.findall(r'[0-9-A-F]+', output[15]) # This just makes sure that the output only contains these items and nothing else that may get in the way of the decoer
+                        #fport = re.findall(r'[0-9-A-F]+', output[13])
+                        #hex.append(output[13])
+                        ### ###
+                        search_item = "FPort"
+                        for index, item in enumerate(hex):
+                            if search_item in item:
+                                print(f"Found '{search_item}' at index {index}")
+                                print("Matching line:", item)
+                                hex.append(item)
+                                break
+                            else:
+                                print(f"'{search_item}' not found in the list")
+                                break
+                        ### ###
+                        #hex.append(output)
+                        pairs = [modified_text[0][i:i+2] for i in range(0, len(modified_text[0]), 2)] # split the lines of hex into pairs
+                        converted_item = ', '.join([f"0X{pair}" for pair in pairs]) # include a '0X' at the front of each pair
+                        decripted_items.append(converted_item) # add them to a sub-liat that will be used in the main Dictionary
                     except:
                         pass
                 except:
                     pass
         except:
             pass
+        # delete these items as they no longer serve any purpose
         del sub_value["AppSKey"]
         del sub_value["NwkSKey"]
         del sub_value["Raw Payloads"]
-        try:
-            sub_value["Decripted Information"] = decripted_items[0]
+        try: # include the first item from the decoded items as the rest will return the same output
+            sub_value["Decrypted Information"] = decripted_items[0]
         except:
             pass
 print(data)
@@ -344,92 +369,90 @@ for key, value in data.items():
     merged_sub_dicts = []
     for index, item in enumerate(value):
         try:
+            ### This is where any of the fifteen devices are decoded, if there is a device modle that is not recognized by this code, it will be sent to the passthrough system (nothing actually decodes here) ###
             if item['Device Type'] == "KIWI" or item['Device Type'] == "CLOVER":
-                out = search_and_decrypt(item['Decripted Information'], 'kiwi-clover-v2.0-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'kiwi-clover-v2.0-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "AURA" or item['Device Type'] == "FLUX":
-                out = search_and_decrypt(item['Decripted Information'], 'aura-flux-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'aura-flux-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "BREEZE" or item['Device Type'] == "BREEZE-V":
-                out = search_and_decrypt(item['Decripted Information'], 'breeze-v1.0-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'breeze-v1.0-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "COMFORT" or item['Device Type'] == "VIVID":
-                out = search_and_decrypt(item['Decripted Information'], 'comfort-vivid-v2.2-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'comfort-vivid-v2.2-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "SEAL" or item['Device Type'] == "SEAL Ex":
-                out = search_and_decrypt(item['Decripted Information'], 'seal-v0.8-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'seal-v0.8-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "SPARROW" or item['Device Type'] == "PELICAN": # this is the right script, and the infromation looks right, but I don't understand why there are errors that are present
-                out = search_and_decrypt(item['Decripted Information'], 'sparrow-pelican-v2.8-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'sparrow-pelican-v2.8-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "TUNDRA":
-                out = search_and_decrypt(item['Decripted Information'], 'tundra-v2.1-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'tundra-v2.1-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "ORCA":
-                out = search_and_decrypt(item['Decripted Information'], 'orca-v0.14-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'orca-v0.14-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             elif item['Device Type'] == "eDoctor":
-                out = search_and_decrypt(item['Decripted Information'], 'edoctor-v0.15-decoder.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'edoctor-v0.15-decoder.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
             else:
-                out = search_and_decrypt(item['Decripted Information'], 'passthrough.js')
+                out = search_and_decrypt(item['Decrypted Information'], 'passthrough.js')
                 out = json.loads(out)
                 merge = {**item, **out}
                 merged_sub_dicts.append(merge)
-                print(key, merge)
         except:
             pass
-    #print(merged_sub_dicts)
-    print(data[key])
     data[key] = merged_sub_dicts
-    print(data[key])
 # Collect all unique keys from the merged sub-dictionaries
 all_keys = set()
 for sub_dicts in data.values():
     for sub_dict in sub_dicts:
         all_keys.update(sub_dict.keys())
-
 # Create a list of rows to be written to the CSV
 rows = []
 for main_key, sub_dicts in data.items():
     for sub_dict in sub_dicts:
         row = [main_key] + [sub_dict.get(key, '') for key in all_keys]
         rows.append(row)
-
 # Convert to DataFrame
 df = pd.DataFrame(rows, columns=['Application'] + list(all_keys))
-
 # Convert to CSV
 csv_file = 'merged_data.csv'
 df.to_csv(csv_file, index=False)
-
+print(data)
 print(f'Data written to {csv_file}')
+print(hex)
+### ###
+#search_item = "fport"
+#for index, item in enumerate(hex):
+#    if search_item in item:
+#        print(f"Found '{search_item}' at index {index}")
+#        print("Matching line:", item)
+#        hex.append(item)
+#        break
+#    else:
+#        print(f"'{search_item}' not found in the list")
+#        break
+### ###
 sys.stdout.write("\033[?25h")
 sys.stdout.flush()

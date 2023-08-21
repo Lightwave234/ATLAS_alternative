@@ -29,4 +29,5 @@ while [ "$#" -gt 0 ]; do
             break
             ;;
     esac
+    echo "Process complete."
 done
