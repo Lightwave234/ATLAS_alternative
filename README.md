@@ -36,6 +36,7 @@ for linux, just run the setup.sh application
 in the terminal, type ./setup.sh -i to install the depndancies, and ./setup.sh -u to uninstall the application depndancies
 
 ### useage of the application ###
+before using this, make sure that all the devices are set to their right device modle (only for the fifteen known types)
 type 'python3.10 atlas_alternative.py' into the shell and enter your credentials for the network server:
 example:
 username: you@tektelic.com
