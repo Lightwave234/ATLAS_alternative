@@ -18,7 +18,7 @@ lora-packet
 
 ### setup ###
 
-#Windows:
+Windows:
 run either setup.cmd or setup.ps1 with
 
 for setup.cmd:
@@ -30,7 +30,7 @@ for setup.ps1:
 you must be have administrative permissions in order to install everything
 run the command ./setup.ps1 -i to install the depndancies, or use ./setup.ps1 -u to uninstall the application dependancies
 
-#Linux:
+Linux:
 for linux, just run the setup.sh application
 
 in the terminal, type ./setup.sh -i to install the depndancies, and ./setup.sh -u to uninstall the application depndancies
