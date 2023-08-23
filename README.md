@@ -43,6 +43,7 @@ username: you@tektelic.com
 password: 123ABC$#
 The program will then fetch all the data from the NS, and beging the decodeing process
 after this is done, a CSV file with all the device information will be created
+(for different decoders there are different ports, in the JS decoders, set the varable 'port' to the right value to get the right output)
 
 ### Bugs and possible errors ###
 if the user's cedentials are written incorrectly, the program will immedatly crash and display a 401 error
