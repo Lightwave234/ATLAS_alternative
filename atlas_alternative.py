@@ -1,3 +1,4 @@
+#!/usr/bin/python3.10
 from requests.auth import HTTPBasicAuth
 from time import *
 from os import *
